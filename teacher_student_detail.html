@@ -1,0 +1,1389 @@
+{% extends "base.html" %}
+
+{% block title %}Студент: {{ student.full_name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 fade-in">
+    <!-- Заголовок -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-light mb-1">{{ student.full_name }}</h2>
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge-custom" style="background: var(--primary-light); color: var(--primary);">
+                    {{ student.course }} курс
+                </span>
+                {% if student.topic %}
+                    <span class="badge-custom" style="background: var(--primary-light); color: var(--primary);">
+                        <i class="bi bi-check-circle-fill me-1" style="font-size: 0.65rem;"></i>
+                        Тема выбрана
+                    </span>
+                {% else %}
+                    <span class="badge-custom" style="background: #fff5f5; color: #dc3545;">
+                        <i class="bi bi-exclamation-circle-fill me-1" style="font-size: 0.65rem;"></i>
+                        Тема не выбрана
+                    </span>
+                {% endif %}
+            </div>
+        </div>
+        <a href="/my-students" class="btn-custom-outline">
+            <i class="bi bi-arrow-left"></i>
+            <span>Назад к списку</span>
+        </a>
+    </div>
+
+    <!-- Основная информация -->
+    <div class="row">
+        <!-- Левая колонка -->
+        <div class="col-lg-8">
+            <!-- Карточка с основной информацией -->
+            <div class="card-modern mb-4">
+                <div class="card-header-modern">
+                    <i class="bi bi-info-circle me-2"></i>
+                    Основная информация
+                </div>
+                <div class="card-body p-4">
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <div class="info-block">
+                                <div class="info-label mb-2">
+                                    <i class="bi bi-journal-text me-1" style="color: var(--primary);"></i>
+                                    Тема диплома
+                                </div>
+                                <div id="topic-display-{{ student.id }}" class="info-content">
+                                    {% if student.topic %}
+                                        <div class="d-flex align-items-center justify-content-between">
+                                            <span>{{ student.topic }}</span>
+                                            <button class="btn-custom-outline ms-2" style="padding: 0.25rem 0.75rem;" onclick="editTopic({{ student.id }})">
+                                                <i class="bi bi-pencil"></i>
+                                            </button>
+                                        </div>
+                                    {% else %}
+                                        <div class="d-flex align-items-center justify-content-between">
+                                            <span class="text-secondary">Тема не выбрана</span>
+                                            <button class="btn-custom-outline ms-2" style="padding: 0.25rem 0.75rem;" onclick="editTopic({{ student.id }})">
+                                                <i class="bi bi-plus"></i> Добавить
+                                            </button>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div id="topic-edit-{{ student.id }}" style="display: none;" class="mt-2">
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" id="topic-input-{{ student.id }}"
+                                               value="{{ student.topic if student.topic else '' }}"
+                                               placeholder="Введите тему диплома">
+                                        <button class="btn-custom" onclick="saveTopic({{ student.id }})">
+                                            <i class="bi bi-check-lg"></i>
+                                        </button>
+                                        <button class="btn-custom-outline" onclick="cancelEditTopic({{ student.id }})">
+                                            <i class="bi bi-x-lg"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="info-block">
+<!--                                <div class="info-label mb-2">-->
+<!--                                    <i class="bi bi-person-badge me-1" style="color: var(&#45;&#45;primary);"></i>-->
+<!--                                    Научный руководитель-->
+<!--                                </div>-->
+                                <div class="info-content">
+                                    {% if advisor %}
+                                        <div class="d-flex align-items-center">
+                                            <span>{{ advisor.full_name }}</span>
+                                            {% if advisor.external_link and advisor.external_link != "#" %}
+                                                <a href="{{ advisor.external_link }}" target="_blank" class="ms-2" style="color: var(--primary);">
+                                                    <i class="bi bi-box-arrow-up-right"></i>
+                                                </a>
+                                            {% endif %}
+                                        </div>
+
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Статусы работы -->
+            <div class="card-modern mb-4">
+                <div class="card-header-modern">
+                    <i class="bi bi-check2-circle me-2"></i>
+                    Статусы работы
+                </div>
+                <div class="card-body p-4">
+                    <div class="row g-4">
+                        <!-- PDF и Бумажная версия -->
+                        <div class="col-md-6">
+                            <div class="d-flex flex-column gap-3">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input status-switch" type="checkbox"
+                                           id="pdf-status-{{ student.id }}" {% if student.pdf_submitted %}checked{% endif %}
+                                           data-field="pdf_submitted">
+                                    <label class="form-check-label small" for="pdf-status-{{ student.id }}">
+                                        <i class="bi bi-file-pdf me-1" style="color: {% if student.pdf_submitted %}var(--primary){% else %}var(--text-light){% endif %};"></i>
+                                        PDF сдан
+                                    </label>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input status-switch" type="checkbox"
+                                           id="physical-status-{{ student.id }}" {% if student.physical_submitted %}checked{% endif %}
+                                           data-field="physical_submitted">
+                                    <label class="form-check-label small" for="physical-status-{{ student.id }}">
+                                        <i class="bi bi-box me-1" style="color: {% if student.physical_submitted %}var(--primary){% else %}var(--text-light){% endif %};"></i>
+                                        Бумажная версия
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Плагиат и Аннотация -->
+                        <div class="col-md-6">
+                            <div class="d-flex flex-column gap-3">
+                                {% if student.course == 4 %}
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input status-switch" type="checkbox"
+                                               id="plagiarism-status-{{ student.id }}" {% if student.plagiarism_checked %}checked{% endif %}
+                                               data-field="plagiarism_checked">
+                                        <label class="form-check-label small" for="plagiarism-status-{{ student.id }}">
+                                            <i class="bi bi-search me-1" style="color: {% if student.plagiarism_checked %}var(--primary){% else %}var(--text-light){% endif %};"></i>
+                                            Плагиат проверен
+                                        </label>
+                                    </div>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input status-switch" type="checkbox"
+                                               id="annotation-status-{{ student.id }}" {% if student.annotation_submitted %}checked{% endif %}
+                                               data-field="annotation_submitted">
+                                        <label class="form-check-label small" for="annotation-status-{{ student.id }}">
+                                            <i class="bi bi-file-text me-1" style="color: {% if student.annotation_submitted %}var(--primary){% else %}var(--text-light){% endif %};"></i>
+                                            Аннотация сдана
+                                        </label>
+                                    </div>
+                                {% else %}
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox"
+                                               id="plagiarism-status-disabled-{{ student.id }}" {% if student.plagiarism_checked %}checked{% endif %}
+                                               disabled>
+                                        <label class="form-check-label small text-secondary" for="plagiarism-status-disabled-{{ student.id }}">
+                                            <i class="bi bi-search me-1"></i>
+                                            Плагиат проверен
+                                            <span class="badge-custom ms-1" style="background: var(--light); color: var(--text);">4 курс</span>
+                                        </label>
+                                    </div>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox"
+                                               id="annotation-status-disabled-{{ student.id }}" {% if student.annotation_submitted %}checked{% endif %}
+                                               disabled>
+                                        <label class="form-check-label small text-secondary" for="annotation-status-disabled-{{ student.id }}">
+                                            <i class="bi bi-file-text me-1"></i>
+                                            Аннотация сдана
+                                            <span class="badge-custom ms-1" style="background: var(--light); color: var(--text);">4 курс</span>
+                                        </label>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if student.course < 4 %}
+                    <div class="small text-secondary mt-3 pt-3 border-top">
+                        <i class="bi bi-info-circle me-1" style="color: var(--primary);"></i>
+                        Статусы "Плагиат" и "Аннотация" доступны только для 4 курса
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Файлы студента -->
+            <div class="card-modern mb-4">
+                <div class="card-header-modern">
+                    <i class="bi bi-folder me-2"></i>
+                    Файлы студента
+                </div>
+                <div class="card-body p-4">
+                    <!-- Индикатор загрузки -->
+                    <div id="files-loading" class="text-center py-4">
+                        <div class="spinner-border" role="status" style="color: var(--primary); width: 2rem; height: 2rem;">
+                            <span class="visually-hidden">Загрузка...</span>
+                        </div>
+                        <p class="mt-2 small text-secondary">Загрузка файлов...</p>
+                    </div>
+
+                    <!-- Список файлов -->
+                    <div id="studentFilesList" class="list-group" style="display: none;"></div>
+
+                    <!-- Сообщение об ошибке -->
+                    <div id="files-error" class="alert alert-danger small" style="display: none;"></div>
+                </div>
+            </div>
+
+            <!-- Рекомендации преподавателя -->
+            <div class="card-modern mb-4">
+                <div class="card-header-modern" style="background: var(--primary);">
+                    <i class="bi bi-book me-2"></i>
+                    Рекомендации преподавателя
+                </div>
+                <div class="card-body p-4">
+                    <!-- Форма загрузки -->
+                    <div class="upload-section mb-4 p-3" style="background: var(--light); border-radius: 8px;">
+                        <form id="uploadTeacherFileForm" enctype="multipart/form-data">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-medium">Файл</label>
+                                    <input type="file"
+                                           class="form-control"
+                                           id="teacherFileUpload"
+                                           name="file"
+                                           accept=".pdf,.doc,.docx,.txt,.rtf,.odt"
+                                           required>
+                                    <small class="text-secondary">PDF, DOC, DOCX, TXT (до 20MB)</small>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-medium">Описание</label>
+                                    <input type="text"
+                                           class="form-control"
+                                           id="teacherFileDescription"
+                                           name="description"
+                                           placeholder="Например: Методичка">
+                                </div>
+                                <div class="col-12">
+                                    <button type="submit" class="btn-custom">
+                                        <i class="bi bi-upload"></i>
+                                        Загрузить
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Список рекомендаций -->
+                    <div id="teacherFilesList" class="list-group">
+                        <div class="text-center py-4">
+                            <div class="spinner-border" role="status" style="color: var(--primary); width: 1.5rem; height: 1.5rem;">
+                                <span class="visually-hidden">Загрузка...</span>
+                            </div>
+                            <p class="mt-2 small text-secondary">Загрузка рекомендаций...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Правая колонка -->
+        <div class="col-lg-4">
+            <!-- Блок действий -->
+            <div class="card-modern mb-4">
+                <div class="card-header-modern">
+                    <i class="bi bi-lightning me-2"></i>
+                    Действия
+                </div>
+                <div class="card-body p-4">
+                    <div class="d-grid gap-2">
+                        <button class="btn-custom" onclick="showAddMeetingModal()">
+                            <i class="bi bi-calendar-plus"></i>
+                            Добавить встречу
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Статистика -->
+            <div class="card-modern mb-4">
+                <div class="card-header-modern">
+                    <i class="bi bi-graph-up me-2"></i>
+                    Статистика
+                </div>
+                <div class="card-body p-4">
+                    <div class="stats-list">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-secondary">Всего встреч:</span>
+                            <span class="fw-medium" id="meetings-count">{{ meetings|length }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-secondary">Задач выполнено:</span>
+                            <span class="fw-medium"><span id="completed-tasks">{{ completed_tasks_count }}</span> из <span id="total-tasks">{{ total_tasks_count }}</span></span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-3">
+                            <span class="text-secondary">Процент выполнения:</span>
+                            <span class="fw-medium" id="completion-rate">{{ completion_rate }}%</span>
+                        </div>
+
+                        {% if total_tasks_count > 0 %}
+                        <div class="progress" style="height: 6px;">
+                            <div class="progress-bar" role="progressbar"
+                                 style="width: {{ completion_rate }}%; background-color: var(--primary);"
+                                 aria-valuenow="{{ completion_rate }}"
+                                 aria-valuemin="0"
+                                 aria-valuemax="100">
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <div class="d-flex justify-content-between mt-3 pt-3 border-top">
+                            <span class="text-secondary">Файлов студента:</span>
+                            <span class="fw-medium" id="files-count">0</span>
+                        </div>
+                        <div class="d-flex justify-content-between mt-2">
+                            <span class="text-secondary">Рекомендаций:</span>
+                            <span class="fw-medium" id="teacher-files-count">0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Созвоны и задачи -->
+    <div class="card-modern mt-4">
+        <div class="card-header-modern">
+            <i class="bi bi-telephone me-2"></i>
+            Встречи и задачи
+        </div>
+        <div class="card-body p-4">
+            {% if meetings %}
+                {% for meeting in meetings %}
+                <div class="meeting-item mb-4 pb-4 {% if not loop.last %}border-bottom{% endif %}" id="meeting-{{ meeting.id }}">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div class="d-flex align-items-center">
+                            <div class="meeting-date me-3">
+                                <span class="meeting-day">{{ meeting.meeting_date.strftime('%d') }}</span>
+                                <span class="meeting-month">{{ meeting.meeting_date.strftime('%b') }}</span>
+                            </div>
+                            <div>
+                                <h6 class="mb-1">Встреча #{{ loop.revindex }}</h6>
+                                <span class="small text-secondary">
+                                    <i class="bi bi-clock me-1"></i>
+                                    {{ meeting.meeting_date.strftime('%H:%M') }}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <span class="badge-custom" style="background: var(--primary-light); color: var(--primary);">
+                                {{ meeting.tasks|selectattr("is_completed")|list|length }}/{{ meeting.tasks|length }} задач
+                            </span>
+                            <button class="btn-custom-outline" style="padding: 0.25rem 0.5rem;" onclick="showAddTaskModal({{ meeting.id }})">
+                                <i class="bi bi-plus"></i>
+                            </button>
+                            <button class="btn-custom-outline" style="padding: 0.25rem 0.5rem;" onclick="editMeeting({{ meeting.id }})">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Заметки -->
+                    <div class="mb-3">
+                        <div id="notes-display-{{ meeting.id }}" class="notes-display">
+                            {% if meeting.notes %}
+                                <div class="p-3" style="background: var(--light); border-radius: 8px;">
+                                    <i class="bi bi-chat-text me-2" style="color: var(--primary);"></i>
+                                    {{ meeting.notes }}
+                                </div>
+                            {% else %}
+                                <div class="text-secondary small">
+                                    <i class="bi bi-chat me-1"></i> Нет заметок
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div id="notes-edit-{{ meeting.id }}" style="display: none;">
+                            <textarea class="form-control" id="notes-input-{{ meeting.id }}" rows="2">{{ meeting.notes if meeting.notes else '' }}</textarea>
+                            <div class="mt-2 d-flex gap-2">
+                                <button class="btn-custom" onclick="saveMeetingNotes({{ meeting.id }})">
+                                    <i class="bi bi-check-lg"></i> Сохранить
+                                </button>
+                                <button class="btn-custom-outline" onclick="cancelEditMeetingNotes({{ meeting.id }})">
+                                    <i class="bi bi-x-lg"></i> Отмена
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Задачи -->
+                    <h6 class="small fw-medium mb-2">Задачи:</h6>
+                    <div class="tasks-list" id="tasks-list-{{ meeting.id }}">
+                        {% for task in meeting.tasks %}
+                        <div class="task-item d-flex align-items-center justify-content-between mb-2 p-2" style="background: var(--light); border-radius: 6px;">
+                            <div class="d-flex align-items-center">
+                                <input type="checkbox"
+                                       class="form-check-input me-2"
+                                       id="task-{{ task.id }}"
+                                       {% if task.is_completed %}checked{% endif %}
+                                       data-task-id="{{ task.id }}"
+                                       onchange="toggleTask({{ task.id }})">
+                                <label class="form-check-label small {% if task.is_completed %}text-decoration-line-through text-secondary{% endif %}"
+                                       for="task-{{ task.id }}">
+                                    {{ task.description }}
+                                </label>
+                                {% if task.completed_at %}
+                                <span class="small text-success ms-2">
+                                    <i class="bi bi-check-circle-fill"></i>
+                                    {{ task.completed_at.strftime('%d.%m.%Y') }}
+                                </span>
+                                {% endif %}
+                            </div>
+                            <button class="btn-custom-outline" style="padding: 0.15rem 0.4rem;" onclick="deleteTask({{ task.id }})">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                        {% else %}
+                        <div class="text-secondary small p-2">
+                            <i class="bi bi-info-circle me-1"></i> Задач пока нет
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="bi bi-telephone-x" style="font-size: 2.5rem; color: var(--text-light); opacity: 0.3;"></i>
+                    <p class="mt-2 text-secondary">Встреч пока нет</p>
+                    <button class="btn-custom mt-2" onclick="showAddMeetingModal()">
+                        <i class="bi bi-calendar-plus"></i>
+                        Добавить первую встречу
+                    </button>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+ <!-- Архив работ -->
+<div class="card-modern mt-4">
+    <div class="card-header-modern">
+        <i class="bi bi-archive me-2"></i>
+        Архив предыдущих работ
+    </div>
+    <div class="card-body p-4">
+        {# Вычисляем текущий учебный год #}
+        {% set current_year = now().year %}
+        {% set current_academic_year = (current_year-1) ~ '/' ~ current_year %}
+
+        {# Создаем отфильтрованный список #}
+        {% set filtered_works = [] %}
+        {% for work in archived_works %}
+            {% if work.academic_year != current_academic_year %}
+                {% set filtered_works = filtered_works.append(work) %}
+            {% endif %}
+        {% endfor %}
+
+        {% if filtered_works %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>Год</th>
+                            <th>Курс</th>
+                            <th>Тип</th>
+                            <th>Тема</th>
+                            <th>Руководитель</th>
+                            <th>Оценка</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for work in filtered_works %}
+                        <tr>
+                            <td><span class="fw-medium">{{ work.academic_year }}</span></td>
+                            <td>{{ work.course }}</td>
+                            <td>
+                                {% if work.work_type == 'coursework' %}
+                                    <span class="badge-custom" style="background: var(--primary-light); color: var(--primary);">
+                                        <i class="bi bi-file-text me-1"></i>Курсовая
+                                    </span>
+                                {% else %}
+                                    <span class="badge-custom" style="background: #fff3cd; color: #856404;">
+                                        <i class="bi bi-file-earmark-text me-1"></i>Диплом
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if work.topic %}
+                                    <span class="archive-topic" onclick="showFullTopic('{{ work.topic|escape }}')">
+                                        {{ work.topic }}
+                                    </span>
+                                {% else %}
+                                    <span class="text-secondary">—</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ work.supervisor_name or '—' }}</td>
+                            <td class="text-center">
+                                {% if work.grade %}
+                                    {% if work.grade in ['отлично', '5'] %}
+                                        <span class="badge-custom" style="background: #d4edda; color: #155724;">Отлично</span>
+                                    {% elif work.grade in ['хорошо', '4'] %}
+                                        <span class="badge-custom" style="background: #d1ecf1; color: #0c5460;">Хорошо</span>
+                                    {% elif work.grade in ['удовлетворительно', '3'] %}
+                                        <span class="badge-custom" style="background: #fff3cd; color: #856404;">Удовл.</span>
+                                    {% else %}
+                                        <span class="badge-custom" style="background: var(--light); color: var(--text);">{{ work.grade }}</span>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="text-secondary">—</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="mt-3 text-end">
+                <a href="/archive" class="btn-custom-outline">
+                    <span>Перейти в архив</span>
+                    <i class="bi bi-arrow-right ms-1"></i>
+                </a>
+            </div>
+        {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-archive" style="font-size: 2.5rem; color: var(--text-light); opacity: 0.3;"></i>
+                <p class="mt-2 text-secondary">
+                    {% if archived_works %}
+                        Все работы за текущий год ({{ current_academic_year }})
+                    {% else %}
+                        Нет архивных работ
+                    {% endif %}
+                </p>
+                <a href="/archive" class="btn-custom-outline mt-2">
+                    <i class="bi bi-plus"></i>
+                    Добавить в архив
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+<!-- Модальное окно добавления созвона -->
+<div class="modal fade" id="addMeetingModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-calendar-plus me-2" style="color: var(--primary);"></i>
+                    Добавить встречу
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addMeetingForm">
+                    <div class="mb-3">
+                        <label for="meeting-date" class="form-label small text-secondary">Дата и время</label>
+                        <input type="datetime-local" class="form-control" id="meeting-date" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="meeting-notes" class="form-label small text-secondary">Заметки</label>
+                        <textarea class="form-control" id="meeting-notes" rows="3" placeholder="О чём говорили..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-custom-outline" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn-custom" onclick="addMeeting()">Добавить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно добавления задачи -->
+<div class="modal fade" id="addTaskModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-plus-circle me-2" style="color: var(--primary);"></i>
+                    Добавить задачу
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addTaskForm">
+                    <input type="hidden" id="task-meeting-id">
+                    <div class="mb-3">
+                        <label for="task-description" class="form-label small text-secondary">Описание задачи</label>
+                        <textarea class="form-control" id="task-description" rows="3" required placeholder="Что нужно сделать?"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-custom-outline" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn-custom" onclick="addTask()">Добавить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для темы -->
+<div class="modal fade" id="topicModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-journal-text me-2" style="color: var(--primary);"></i>
+                    Тема работы
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p id="fullTopicText" class="mb-0" style="white-space: pre-wrap; word-break: break-word;"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-custom-outline" data-bs-dismiss="modal">Закрыть</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bootstrap Icons -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+let currentStudentId = {{ student.id }};
+
+// ========== УПРАВЛЕНИЕ ТЕМОЙ ==========
+function showFullTopic(topicText) {
+    document.getElementById('fullTopicText').textContent = topicText;
+    new bootstrap.Modal(document.getElementById('topicModal')).show();
+}
+
+function editTopic(studentId) {
+    document.getElementById('topic-display-' + studentId).style.display = 'none';
+    document.getElementById('topic-edit-' + studentId).style.display = 'block';
+    document.getElementById('topic-input-' + studentId).focus();
+}
+
+function cancelEditTopic(studentId) {
+    document.getElementById('topic-display-' + studentId).style.display = 'block';
+    document.getElementById('topic-edit-' + studentId).style.display = 'none';
+}
+
+async function saveTopic(studentId) {
+    const input = document.getElementById('topic-input-' + studentId);
+    const newTopic = input.value.trim();
+
+    if (!newTopic) {
+        showNotification('Тема не может быть пустой', 'warning');
+        return;
+    }
+
+    try {
+        const response = await fetch('/update-student-topic', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                student_id: studentId,
+                topic: newTopic
+            })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            const topicDisplay = document.getElementById('topic-display-' + studentId);
+            topicDisplay.innerHTML = `
+                <div class="d-flex align-items-center justify-content-between">
+                    <span>${newTopic}</span>
+                    <button class="btn-custom-outline ms-2" style="padding: 0.25rem 0.75rem;" onclick="editTopic(${studentId})">
+                        <i class="bi bi-pencil"></i>
+                    </button>
+                </div>
+            `;
+            cancelEditTopic(studentId);
+            showNotification('Тема успешно обновлена', 'success');
+        } else {
+            showNotification('Ошибка: ' + result.error, 'error');
+        }
+    } catch (error) {
+        console.error('Ошибка:', error);
+        showNotification('Ошибка при сохранении', 'error');
+    }
+}
+
+// ========== СТАТУСЫ ==========
+document.querySelectorAll('.status-switch').forEach(checkbox => {
+    checkbox.addEventListener('change', async function() {
+        const field = this.dataset.field;
+        const value = this.checked;
+        const studentCourse = {{ student.course }};
+
+        if (studentCourse < 4 && (field === 'plagiarism_checked' || field === 'annotation_submitted')) {
+            this.checked = !this.checked;
+            showNotification('Этот статус доступен только для 4 курса', 'warning');
+            return;
+        }
+
+        try {
+            const response = await fetch('/update-student-status', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    student_id: currentStudentId,
+                    [field]: value
+                })
+            });
+
+            const result = await response.json();
+            if (result.success) {
+                const icon = this.nextElementSibling.querySelector('i');
+                if (icon) {
+                    icon.style.color = value ? 'var(--primary)' : 'var(--text-light)';
+                }
+                showNotification('Статус обновлен', 'success');
+            } else {
+                this.checked = !this.checked;
+                showNotification('Ошибка: ' + result.error, 'error');
+            }
+        } catch (error) {
+            console.error('Ошибка:', error);
+            this.checked = !this.checked;
+            showNotification('Ошибка при обновлении', 'error');
+        }
+    });
+});
+
+// ========== СОЗВОНЫ ==========
+function showAddMeetingModal() {
+    const now = new Date();
+    const localDateTime = now.toISOString().slice(0, 16);
+    document.getElementById('meeting-date').value = localDateTime;
+    new bootstrap.Modal(document.getElementById('addMeetingModal')).show();
+}
+
+async function addMeeting() {
+    const dateInput = document.getElementById('meeting-date').value;
+    const notes = document.getElementById('meeting-notes').value;
+
+    if (!dateInput) {
+        showNotification('Укажите дату встречи', 'warning');
+        return;
+    }
+
+    try {
+        const response = await fetch('/add-meeting', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                student_id: currentStudentId,
+                meeting_date: dateInput,
+                notes: notes
+            })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            bootstrap.Modal.getInstance(document.getElementById('addMeetingModal')).hide();
+            showNotification('Встреча добавлен', 'success');
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showNotification('Ошибка: ' + result.error, 'error');
+        }
+    } catch (error) {
+        console.error('Ошибка:', error);
+        showNotification('Ошибка при добавлении', 'error');
+    }
+}
+
+function editMeeting(meetingId) {
+    document.getElementById(`notes-display-${meetingId}`).style.display = 'none';
+    document.getElementById(`notes-edit-${meetingId}`).style.display = 'block';
+}
+
+function cancelEditMeetingNotes(meetingId) {
+    document.getElementById(`notes-display-${meetingId}`).style.display = 'block';
+    document.getElementById(`notes-edit-${meetingId}`).style.display = 'none';
+}
+
+async function saveMeetingNotes(meetingId) {
+    const notes = document.getElementById(`notes-input-${meetingId}`).value;
+
+    try {
+        const response = await fetch('/update-meeting-notes', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                meeting_id: meetingId,
+                notes: notes
+            })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            const notesDisplay = document.getElementById(`notes-display-${meetingId}`);
+            if (notes.trim()) {
+                notesDisplay.innerHTML = `
+                    <div class="p-3" style="background: var(--light); border-radius: 8px;">
+                        <i class="bi bi-chat-text me-2" style="color: var(--primary);"></i>
+                        ${notes}
+                    </div>
+                `;
+            } else {
+                notesDisplay.innerHTML = `<div class="text-secondary small"><i class="bi bi-chat me-1"></i> Нет заметок</div>`;
+            }
+            cancelEditMeetingNotes(meetingId);
+            showNotification('Заметки обновлены', 'success');
+        } else {
+            showNotification('Ошибка: ' + result.error, 'error');
+        }
+    } catch (error) {
+        console.error('Ошибка:', error);
+        showNotification('Ошибка при сохранении', 'error');
+    }
+}
+
+// ========== ЗАДАЧИ ==========
+function showAddTaskModal(meetingId) {
+    document.getElementById('task-meeting-id').value = meetingId;
+    document.getElementById('task-description').value = '';
+    new bootstrap.Modal(document.getElementById('addTaskModal')).show();
+}
+
+async function addTask() {
+    const meetingId = document.getElementById('task-meeting-id').value;
+    const description = document.getElementById('task-description').value.trim();
+
+    if (!description) {
+        showNotification('Опишите задачу', 'warning');
+        return;
+    }
+
+    try {
+        const response = await fetch('/add-task', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                meeting_id: parseInt(meetingId),
+                description: description
+            })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            bootstrap.Modal.getInstance(document.getElementById('addTaskModal')).hide();
+            showNotification('Задача добавлена', 'success');
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showNotification('Ошибка: ' + result.error, 'error');
+        }
+    } catch (error) {
+        console.error('Ошибка:', error);
+        showNotification('Ошибка при добавлении', 'error');
+    }
+}
+
+async function toggleTask(taskId) {
+    const checkbox = document.getElementById(`task-${taskId}`);
+    const label = document.querySelector(`label[for="task-${taskId}"]`);
+    const isCompleted = checkbox.checked;
+
+    try {
+        const response = await fetch('/toggle-task', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                task_id: taskId,
+                is_completed: isCompleted
+            })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            if (isCompleted) {
+                label.classList.add('text-decoration-line-through', 'text-secondary');
+            } else {
+                label.classList.remove('text-decoration-line-through', 'text-secondary');
+            }
+            updateStatistics();
+            showNotification(isCompleted ? 'Задача выполнена' : 'Задача возобновлена', 'success');
+        } else {
+            checkbox.checked = !isCompleted;
+            showNotification('Ошибка: ' + result.error, 'error');
+        }
+    } catch (error) {
+        console.error('Ошибка:', error);
+        checkbox.checked = !isCompleted;
+        showNotification('Ошибка при обновлении', 'error');
+    }
+}
+
+async function deleteTask(taskId) {
+    if (!confirm('Удалить задачу?')) return;
+
+    try {
+        const response = await fetch(`/delete-task/${taskId}`, {
+            method: 'DELETE'
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            document.querySelector(`#task-${taskId}`).closest('.task-item').remove();
+            updateStatistics();
+            showNotification('Задача удалена', 'success');
+        } else {
+            showNotification('Ошибка: ' + result.error, 'error');
+        }
+    } catch (error) {
+        console.error('Ошибка:', error);
+        showNotification('Ошибка при удалении', 'error');
+    }
+}
+
+async function updateStatistics() {
+    try {
+        const response = await fetch(`/get-student-statistics/${currentStudentId}`);
+        const stats = await response.json();
+
+        if (stats.success) {
+            document.getElementById('meetings-count').textContent = stats.meetings_count;
+            document.getElementById('completed-tasks').textContent = stats.completed_tasks;
+            document.getElementById('total-tasks').textContent = stats.total_tasks;
+            document.getElementById('completion-rate').textContent = stats.completion_rate + '%';
+        }
+    } catch (error) {
+        console.error('Ошибка при обновлении статистики:', error);
+    }
+}
+
+// ========== ФАЙЛЫ ==========
+async function loadStudentFiles() {
+    const filesList = document.getElementById('studentFilesList');
+    const loadingEl = document.getElementById('files-loading');
+    const errorEl = document.getElementById('files-error');
+    const filesCount = document.getElementById('files-count');
+
+    try {
+        const response = await fetch(`/get-student-files/${currentStudentId}`);
+        const data = await response.json();
+
+        loadingEl.style.display = 'none';
+
+        if (data.success) {
+            if (data.files && data.files.length > 0) {
+                filesList.style.display = 'block';
+                errorEl.style.display = 'none';
+                displayStudentFiles(data.files);
+                if (filesCount) filesCount.textContent = data.files.length;
+            } else {
+                filesList.style.display = 'block';
+                errorEl.style.display = 'none';
+                filesList.innerHTML = `
+                    <div class="text-center py-4 text-secondary">
+                        <i class="bi bi-folder2-open" style="font-size: 2rem; opacity: 0.3;"></i>
+                        <p class="mt-2 mb-0 small">Файлы не загружены</p>
+                    </div>
+                `;
+                if (filesCount) filesCount.textContent = '0';
+            }
+        } else {
+            throw new Error(data.error || 'Ошибка загрузки');
+        }
+    } catch (error) {
+        console.error('Ошибка:', error);
+        loadingEl.style.display = 'none';
+        errorEl.style.display = 'block';
+        errorEl.innerHTML = `<i class="bi bi-exclamation-triangle me-1"></i> ${error.message}`;
+        if (filesCount) filesCount.textContent = '!';
+    }
+}
+
+function displayStudentFiles(files) {
+    const filesList = document.getElementById('studentFilesList');
+    let html = '';
+
+    files.forEach(file => {
+        const fileIcon = file.file_type === 'pdf' ? 'bi-file-earmark-pdf' :
+                        file.file_type === 'archive' ? 'bi-file-earmark-zip' :
+                        'bi-file-earmark';
+        const fileColor = file.file_type === 'pdf' ? '#dc3545' :
+                         file.file_type === 'archive' ? '#ffc107' :
+                         'var(--primary)';
+
+        html += `
+            <div class="list-group-item border-0 border-bottom px-0" style="border-color: var(--border) !important;">
+                <div class="d-flex align-items-start">
+                    <i class="bi ${fileIcon} me-3" style="font-size: 1.5rem; color: ${fileColor};"></i>
+                    <div class="flex-grow-1">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <span class="small fw-medium">${escapeHtml(file.original_filename)}</span>
+                                <div class="d-flex gap-2 mt-1">
+                                    <span class="small text-secondary">${file.file_size_formatted || formatFileSize(file.file_size)}</span>
+                                    <span class="small text-secondary">•</span>
+                                    <span class="small text-secondary">${file.created_at || ''}</span>
+                                </div>
+                                ${file.teacher_note ? `
+                                <div class="small p-2 rounded mt-2" style="background: var(--primary-light);">
+                                    <i class="bi bi-chat-quote me-1" style="color: var(--primary);"></i>
+                                    ${escapeHtml(file.teacher_note)}
+                                </div>
+                                ` : ''}
+                            </div>
+                            <button onclick="downloadStudentFile(${file.id})" class="btn-custom-outline" style="padding: 0.25rem 0.75rem;">
+                                <i class="bi bi-download"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+
+    filesList.innerHTML = html;
+}
+
+// ========== РЕКОМЕНДАЦИИ ==========
+async function loadTeacherFiles() {
+    const filesList = document.getElementById('teacherFilesList');
+    const teacherFilesCount = document.getElementById('teacher-files-count');
+
+    try {
+        const response = await fetch(`/get-teacher-files/${currentStudentId}`);
+        const data = await response.json();
+
+        if (data.success) {
+            displayTeacherFiles(data.files);
+            if (teacherFilesCount) teacherFilesCount.textContent = data.files.length;
+        } else {
+            throw new Error(data.error || 'Ошибка загрузки');
+        }
+    } catch (error) {
+        console.error('Ошибка:', error);
+        if (filesList) {
+            filesList.innerHTML = `
+                <div class="alert alert-danger small">
+                    <i class="bi bi-exclamation-triangle me-1"></i> ${error.message}
+                </div>
+            `;
+        }
+    }
+}
+
+function displayTeacherFiles(files) {
+    const filesList = document.getElementById('teacherFilesList');
+
+    if (files.length === 0) {
+        filesList.innerHTML = `
+            <div class="text-center py-4 text-secondary">
+                <i class="bi bi-folder2-open" style="font-size: 2rem; opacity: 0.3;"></i>
+                <p class="mt-2 mb-0 small">Нет рекомендаций</p>
+            </div>
+        `;
+        return;
+    }
+
+    let html = '';
+    files.forEach(file => {
+        const fileIcon = file.file_type === 'pdf' ? 'bi-file-earmark-pdf' :
+                        file.file_type === 'document' ? 'bi-file-earmark-word' :
+                        'bi-file-earmark-text';
+        const fileColor = file.file_type === 'pdf' ? '#dc3545' :
+                         file.file_type === 'document' ? 'var(--primary)' :
+                         'var(--text-light)';
+
+        html += `
+            <div class="list-group-item border-0 border-bottom px-0" style="border-color: var(--border) !important;">
+                <div class="d-flex align-items-start">
+                    <i class="bi ${fileIcon} me-3" style="font-size: 1.5rem; color: ${fileColor};"></i>
+                    <div class="flex-grow-1">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <span class="small fw-medium">${escapeHtml(file.original_filename)}</span>
+                                <div class="d-flex gap-2 mt-1">
+                                    <span class="small text-secondary">${file.teacher_name}</span>
+                                    <span class="small text-secondary">•</span>
+                                    <span class="small text-secondary">${file.created_at || ''}</span>
+                                </div>
+                                ${file.description ? `
+                                <div class="small p-2 rounded mt-2" style="background: var(--light);">
+                                    ${escapeHtml(file.description)}
+                                </div>
+                                ` : ''}
+                            </div>
+                            <div class="d-flex gap-2">
+                                <button onclick="downloadTeacherFile(${file.id})" class="btn-custom-outline" style="padding: 0.25rem 0.75rem;">
+                                    <i class="bi bi-download"></i>
+                                </button>
+                                <button onclick="deleteTeacherFile(${file.id})" class="btn-custom-outline" style="padding: 0.25rem 0.75rem; color: #dc3545;">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+
+    filesList.innerHTML = html;
+}
+
+// ========== ЗАГРУЗКА ФАЙЛОВ ==========
+const uploadForm = document.getElementById('uploadTeacherFileForm');
+if (uploadForm) {
+    uploadForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        const formData = new FormData();
+        const fileInput = document.getElementById('teacherFileUpload');
+        const description = document.getElementById('teacherFileDescription').value;
+
+        if (!fileInput.files[0]) {
+            showNotification('Выберите файл', 'warning');
+            return;
+        }
+
+        if (fileInput.files[0].size > 20 * 1024 * 1024) {
+            showNotification('Файл слишком большой (макс. 20MB)', 'warning');
+            return;
+        }
+
+        formData.append('file', fileInput.files[0]);
+        formData.append('student_id', currentStudentId);
+        formData.append('description', description);
+
+        const submitBtn = e.target.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span>';
+        submitBtn.disabled = true;
+
+        try {
+            const response = await fetch('/upload-teacher-file', {
+                method: 'POST',
+                body: formData
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                showNotification('Файл загружен', 'success');
+                document.getElementById('uploadTeacherFileForm').reset();
+                loadTeacherFiles();
+            } else {
+                showNotification('Ошибка: ' + result.error, 'error');
+            }
+        } catch (error) {
+            console.error('Ошибка:', error);
+            showNotification('Ошибка при загрузке', 'error');
+        } finally {
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+        }
+    });
+}
+
+// ========== СКАЧИВАНИЕ ==========
+async function downloadStudentFile(fileId) {
+    window.location.href = `/download-student-file/${fileId}`;
+}
+
+async function downloadTeacherFile(fileId) {
+    window.location.href = `/download-teacher-file/${fileId}`;
+}
+
+// ========== УДАЛЕНИЕ ==========
+async function deleteTeacherFile(fileId) {
+    if (!confirm('Удалить этот файл?')) return;
+
+    try {
+        const response = await fetch(`/delete-teacher-file/${fileId}`, {
+            method: 'DELETE'
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            showNotification('Файл удален', 'success');
+            loadTeacherFiles();
+        } else {
+            showNotification('Ошибка: ' + result.error, 'error');
+        }
+    } catch (error) {
+        console.error('Ошибка:', error);
+        showNotification('Ошибка при удалении', 'error');
+    }
+}
+
+// ========== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ==========
+function formatFileSize(bytes) {
+    if (!bytes || bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function showNotification(message, type = 'info') {
+    const alertClass = type === 'success' ? 'alert-success' :
+                      type === 'warning' ? 'alert-warning' :
+                      type === 'error' ? 'alert-danger' : 'alert-info';
+
+    const notification = document.createElement('div');
+    notification.className = `alert ${alertClass} alert-dismissible fade show`;
+    notification.style.position = 'fixed';
+    notification.style.top = '20px';
+    notification.style.right = '20px';
+    notification.style.zIndex = '9999';
+    notification.style.minWidth = '300px';
+    notification.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+
+    notification.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+
+    document.body.appendChild(notification);
+    setTimeout(() => notification.remove(), 3000);
+}
+
+// ========== ИНИЦИАЛИЗАЦИЯ ==========
+document.addEventListener('DOMContentLoaded', function() {
+    loadStudentFiles();
+    loadTeacherFiles();
+    setTimeout(updateStatistics, 500);
+});
+</script>
+
+<style>
+/* Дополнительные стили */
+.info-block {
+    padding: 0.5rem 0;
+}
+
+.info-label {
+    font-size: 0.8rem;
+    color: var(--text-light);
+}
+
+.info-content {
+    font-size: 0.95rem;
+}
+
+/* Дата созвона */
+.meeting-date {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    background: var(--primary-light);
+    border-radius: 8px;
+    color: var(--primary);
+    line-height: 1.2;
+}
+
+.meeting-day {
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.meeting-month {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+}
+
+/* Архивная тема */
+.archive-topic {
+    cursor: pointer;
+    color: var(--text);
+    transition: color 0.2s ease;
+}
+
+.archive-topic:hover {
+    color: var(--primary);
+    text-decoration: underline;
+}
+
+/* Формы */
+.form-check-input {
+    width: 2.2rem;
+    height: 1.1rem;
+    border-radius: 2rem;
+    border: 1px solid var(--border);
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23ffffff'/%3e%3c/svg%3e");
+    transition: all 0.2s ease;
+}
+
+.form-check-input:checked {
+    background-color: var(--primary);
+    border-color: var(--primary);
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23ffffff'/%3e%3c/svg%3e");
+}
+
+.form-check-input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 0.2rem rgba(65, 196, 67, 0.25);
+}
+
+.form-check-input:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Прогресс-бар */
+.progress {
+    background-color: var(--light);
+    border-radius: 4px;
+}
+
+.progress-bar {
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+
+/* Таблицы */
+.table {
+    font-size: 0.85rem;
+}
+
+.table th {
+    font-weight: 500;
+    color: var(--text-light);
+    border-bottom: 1px solid var(--border);
+    background: white;
+}
+
+.table td {
+    border-bottom: 1px solid var(--border);
+}
+
+/* Анимации */
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+.alert {
+    animation: slideIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.fade-in {
+    animation: fadeIn 0.3s ease-out;
+}
+</style>
+{% endblock %}

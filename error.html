@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+
+{% block title %}Ошибка{% endblock %}
+
+{% block content %}
+<div class="alert alert-danger">
+    <h4>Ошибка</h4>
+    <p>{{ error }}</p>
+</div>
+<a href="/" class="btn btn-secondary">На главную</a>
+{% endblock %}

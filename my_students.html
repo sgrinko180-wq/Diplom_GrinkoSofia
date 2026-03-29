@@ -1,0 +1,1429 @@
+{% extends "base.html" %}
+
+{% block title %}Мои студенты{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <!-- Заголовок -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <h2 class="fw-light mb-1">
+                        {% if is_admin %}
+                            Список студентов (Администратор)
+                        {% else %}
+                            Мои студенты: {{ teacher_name }}
+                        {% endif %}
+                    </h2>
+                    {% if is_admin %}
+                        <span class="badge bg-dark mt-1">Полный доступ</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+  {% if is_admin %}
+<!-- Вкладки по курсам для администратора в едином стиле -->
+<div class="border-bottom mb-3">
+    <ul class="nav nav-tabs border-bottom-0" id="courseTabs" role="tablist">
+        {% set courses = students | map(attribute='course') | unique | sort %}
+        {% for course in courses %}
+        {% set students_in_course = students | selectattr("course", "equalto", course) | list %}
+        {% set no_topic_count = students_in_course | selectattr("topic", "equalto", None) | list | length %}
+        <li class="nav-item" role="presentation">
+            <button class="nav-link {% if loop.first %}active{% endif %} px-3 py-2"
+                    id="course-{{ course }}-tab"
+                    data-bs-toggle="tab"
+                    data-bs-target="#course-{{ course }}"
+                    type="button"
+                    role="tab">
+                {{ course }} курс
+                <span class="ms-1 text-secondary small">{{ students_in_course|length }}</span>
+                {% if no_topic_count > 0 %}
+                    <span class="ms-1 text-danger small">без темы: {{ no_topic_count }}</span>
+                {% endif %}
+            </button>
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+
+<!-- Контент вкладок -->
+<div class="tab-content" id="courseTabsContent">
+    {% for course in courses %}
+    {% set students_in_course = students | selectattr("course", "equalto", course) | list %}
+    <div class="tab-pane fade {% if loop.first %}show active{% endif %}"
+         id="course-{{ course }}"
+         role="tabpanel">
+
+        <!-- Таблица в едином стиле -->
+        <div class="table-responsive">
+            <table class="table table-sm align-middle">
+                <thead class="small text-secondary">
+                    <tr>
+                        <th style="width: 5%">№</th>
+                        <th style="width: 15%">ФИО студента</th>
+                        <th style="width: 15%">Руководитель</th>
+                        <th style="width: 25%">Тема диплома</th>
+                        <th style="width: 8%">PDF сдан</th>
+                        <th style="width: 8%">Бумажная версия</th>
+                        <th style="width: 8%">Плагиат</th>
+                        <th style="width: 8%">Аннотация</th>
+                        <th style="width: 8%">Статус встреч</th>
+                        <th style="width: 15%">Действия</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for student in students_in_course %}
+                    <tr id="student-row-{{ student.id }}"
+                        {% if not student.topic %}class="table-danger"{% endif %}>
+                        <td class="text-secondary small">{{ loop.index }}</td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <!-- Иконка статуса созвонов (для администратора) -->
+                                {% if student.call_status == 'no_calls' %}
+                                    <span class="status-icon me-1" title="Давно не было встреч"></span>
+                                {% elif student.call_status == 'irregular_calls' %}
+                                    <span class="status-icon me-1" title="Нерегулярные встречи"></span>
+                                {% elif student.call_status == 'regular_calls' %}
+                                    <span class="status-icon me-1" title="Регулярные встречи"></span>
+                                {% endif %}
+
+                                <a href="/admin/student/{{ student.id }}"
+                                   class="{% if not student.topic %}text-danger{% else %}text-dark{% endif %} text-decoration-none student-link">
+                                    {{ student.full_name }}
+                                </a>
+                            </div>
+                        </td>
+                    <td>
+    <div class="d-flex align-items-center">
+        <span class="small">
+            {% if student.advisor_name and student.advisor_name != "—" and student.advisor_name != "Администратор (все студенты)" %}
+                {{ student.advisor_name }}
+            {% else %}
+                <span class="text-muted">Не назначен</span>
+            {% endif %}
+        </span>
+        {% if student.advisor_link and student.advisor_link != "#" %}
+            <a href="{{ student.advisor_link }}" target="_blank" class="ms-1 text-secondary small">↗</a>
+        {% endif %}
+    </div>
+</td>
+                        <td class="topic-cell">
+                            <!-- Режим просмотра темы -->
+                            <div id="topic-view-{{ student.id }}" class="d-flex align-items-center">
+                                <span id="topic-text-{{ student.id }}"
+                                      class="topic-text {% if not student.topic %}text-danger{% endif %}"
+                                      onclick="showFullTopic('{% if not student.topic %}Тема не выбрана{% else %}{{ student.topic|escape }}{% endif %}')">
+                                    {% if student.topic %}
+                                        {{ student.topic }}
+                                    {% else %}
+                                        Тема не выбрана
+                                    {% endif %}
+                                </span>
+                                <button type="button"
+                                        class="btn btn-sm btn-outline-secondary ms-2 edit-topic-btn"
+                                        data-student-id="{{ student.id }}"
+                                        title="Редактировать тему">
+                                    Ред.
+                                </button>
+                            </div>
+
+                            <!-- Режим редактирования темы (скрыт по умолчанию) -->
+                            <div id="topic-edit-{{ student.id }}" style="display: none;">
+                                <div class="input-group input-group-sm">
+                                    <input type="text"
+                                           class="form-control form-control-sm"
+                                           id="topic-input-{{ student.id }}"
+                                           value="{{ student.topic if student.topic else '' }}"
+                                           placeholder="Введите тему диплома">
+                                    <button type="button"
+                                            class="btn btn-sm btn-success save-topic-btn"
+                                            data-student-id="{{ student.id }}">
+                                        ✓
+                                    </button>
+                                    <button type="button"
+                                            class="btn btn-sm btn-secondary cancel-topic-btn"
+                                            data-student-id="{{ student.id }}">
+                                        ✗
+                                    </button>
+                                </div>
+                            </div>
+                        </td>
+
+                        <!-- PDF сдан -->
+                        <td class="text-center">
+                            <div class="form-check form-switch d-inline-block">
+                                <input class="form-check-input status-checkbox"
+                                       type="checkbox"
+                                       id="pdf_{{ student.id }}"
+                                       {% if student.pdf_submitted %}checked{% endif %}
+                                       data-student-id="{{ student.id }}"
+                                       data-field="pdf_submitted">
+                            </div>
+                        </td>
+
+                        <!-- Бумажная версия -->
+                        <td class="text-center">
+                            <div class="form-check form-switch d-inline-block">
+                                <input class="form-check-input status-checkbox"
+                                       type="checkbox"
+                                       id="physical_{{ student.id }}"
+                                       {% if student.physical_submitted %}checked{% endif %}
+                                       data-student-id="{{ student.id }}"
+                                       data-field="physical_submitted">
+                            </div>
+                        </td>
+
+                        <!-- Проверка на плагиат -->
+                        <td class="text-center">
+                            <div class="form-check form-switch d-inline-block">
+                                {% if student.course == 4 %}
+                                    <input class="form-check-input status-checkbox"
+                                           type="checkbox"
+                                           id="plagiarism_{{ student.id }}"
+                                           {% if student.plagiarism_checked %}checked{% endif %}
+                                           data-student-id="{{ student.id }}"
+                                           data-field="plagiarism_checked">
+                                {% else %}
+                                    <input class="form-check-input"
+                                           type="checkbox"
+                                           id="plagiarism_disabled_{{ student.id }}"
+                                           {% if student.plagiarism_checked %}checked{% endif %}
+                                           disabled
+                                           style="opacity: 0.5; cursor: not-allowed;"
+                                           title="Доступно только для 4 курса">
+                                {% endif %}
+                            </div>
+                        </td>
+
+                        <!-- Аннотация -->
+                        <td class="text-center">
+                            <div class="form-check form-switch d-inline-block">
+                                {% if student.course == 4 %}
+                                    <input class="form-check-input status-checkbox"
+                                           type="checkbox"
+                                           id="annotation_{{ student.id }}"
+                                           {% if student.annotation_submitted %}checked{% endif %}
+                                           data-student-id="{{ student.id }}"
+                                           data-field="annotation_submitted">
+                                {% else %}
+                                    <input class="form-check-input"
+                                           type="checkbox"
+                                           id="annotation_disabled_{{ student.id }}"
+                                           {% if student.annotation_submitted %}checked{% endif %}
+                                           disabled
+                                           style="opacity: 0.5; cursor: not-allowed;"
+                                           title="Доступно только для 4 курса">
+                                {% endif %}
+                            </div>
+                        </td>
+
+                        <!-- Статус встреч -->
+                        <td>
+                            {% if student.call_status %}
+                                <span class="call-status-badge small badge-{{ student.call_status }}">
+                                    {{ student.call_status_label }}
+                                </span>
+                            {% else %}
+                                <span class="badge-status small text-secondary">—</span>
+                            {% endif %}
+                        </td>
+
+                        <!-- Действия -->
+                        <td>
+                            <button type="button"
+                                    class="btn btn-sm btn-outline-primary save-status-btn"
+                                    data-student-id="{{ student.id }}"
+                                    style="display: none;">
+                                Сохранить
+                            </button>
+<!--                            <button type="button"-->
+<!--                                    class="btn btn-sm btn-outline-info view-archive-btn"-->
+<!--                                    data-student-id="{{ student.id }}"-->
+<!--                                    data-student-name="{{ student.full_name }}"-->
+<!--                                    data-student-course="{{ student.course }}"-->
+<!--                                    onclick="openStudentArchive('{{ student.id }}', '{{ student.full_name|escape }}', '{{ student.course }}')">-->
+<!--                                Архив-->
+<!--                            </button>-->
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="10" class="text-center text-secondary py-4">
+                            На этом курсе пока нет студентов
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Кнопки действий для курса -->
+        <div class="d-flex justify-content-between align-items-center mt-3">
+            <div>
+                <button type="button" class="btn btn-sm btn-success save-all-statuses" data-course="{{ course }}" style="display: none;">
+                    Сохранить все статусы
+                </button>
+
+                <!-- Фильтры по статусу встреч для администратора -->
+                <div class="btn-group btn-group-sm ms-2">
+                    <button type="button" class="btn btn-outline-secondary filter-btn" data-status="no_calls">
+                        Давно не звонили
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary filter-btn" data-status="irregular_calls">
+                        Нерегулярные встречи
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary filter-btn" data-status="regular_calls">
+                        Регулярные встречи
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary show-all-btn">
+                        Все
+                    </button>
+                </div>
+            </div>
+            <a href="/" class="btn btn-sm btn-outline-secondary">
+                ← Назад к общему списку
+            </a>
+        </div>
+
+        <!-- Статистика по курсу в едином стиле -->
+        <div class="mt-4 pt-3 small text-secondary border-top">
+            <div class="d-flex gap-4 flex-wrap">
+                <span>Всего: <span class="text-dark fw-medium">{{ students_in_course|length }}</span></span>
+                <span>С темой: <span class="text-dark fw-medium">{{ students_in_course|selectattr('topic')|list|length }}</span></span>
+                <span>Без темы: <span class="text-danger fw-medium">{{ students_in_course|rejectattr('topic')|list|length }}</span></span>
+                <span>PDF сдали: <span class="text-dark fw-medium">{{ students_in_course|selectattr('pdf_submitted')|list|length }}</span></span>
+                <span>Бумажную сдали: <span class="text-dark fw-medium">{{ students_in_course|selectattr('physical_submitted')|list|length }}</span></span>
+
+                <!-- Статистика по встречам -->
+                <span class="text-danger">Давно не звонили: <span class="text-danger fw-medium">{{ students_in_course|selectattr('call_status', 'equalto', 'no_calls')|list|length }}</span></span>
+                <span class="text-dark">Нерегулярные: <span class="text-dark fw-medium">{{ students_in_course|selectattr('call_status', 'equalto', 'irregular_calls')|list|length }}</span></span>
+                <span class="text-dark">Регулярные: <span class="text-dark fw-medium">{{ students_in_course|selectattr('call_status', 'equalto', 'regular_calls')|list|length }}</span></span>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+
+    </div>
+
+    {% else %}
+    <!-- Для преподавателя - таблица без вкладок в едином стиле -->
+    <div class="table-responsive">
+        <table class="table table-sm align-middle">
+            <thead class="small text-secondary">
+                <tr>
+                    <th style="width: 5%">№</th>
+                    <th style="width: 15%">ФИО студента</th>
+                    <th style="width: 5%">Курс</th>
+                    <th style="width: 25%">Тема диплома</th>
+                    <th style="width: 8%">PDF сдан</th>
+                    <th style="width: 8%">Бумажная версия</th>
+                    <th style="width: 8%">Плагиат</th>
+                    <th style="width: 8%">Аннотация</th>
+                    <th style="width: 8%">Статус</th>
+                    <th style="width: 10%">Действия</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for student in students %}
+                <tr id="student-row-{{ student.id }}"
+                    {% if not student.topic %}class="table-danger"{% endif %}>
+                    <td class="text-secondary small">{{ loop.index }}</td>
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <!-- Иконка статуса созвонов -->
+                            {% if student.call_status == 'no_calls' %}
+                                <span class="status-icon me-1" title="Давно не было встреч"></span>
+                            {% elif student.call_status == 'irregular_calls' %}
+                                <span class="status-icon me-1" title="Нерегулярные встречи"></span>
+                            {% elif student.call_status == 'regular_calls' %}
+                                <span class="status-icon me-1" title="Регулярные встречи"></span>
+                            {% endif %}
+
+                            <!-- Ссылка на студента -->
+                            <a href="/teacher/student/{{ student.id }}"
+                               class="{% if not student.topic %}text-danger{% else %}text-dark{% endif %} text-decoration-none student-link">
+                                {{ student.full_name }}
+                            </a>
+
+                            <!-- Бейдж статуса созвонов -->
+                            {% if student.call_status %}
+                            <span class="call-status-badge ms-2 small badge-{{ student.call_status }}">
+                                {{ student.call_status_label }}
+                            </span>
+                            {% endif %}
+                        </div>
+                    </td>
+                    <td>{{ student.course }}</td>
+                    <td class="topic-cell">
+                        <!-- Режим просмотра темы -->
+                        <div id="topic-view-{{ student.id }}" class="d-flex align-items-center">
+                            <span id="topic-text-{{ student.id }}"
+                                  class="topic-text {% if not student.topic %}text-danger{% endif %}"
+                                  onclick="showFullTopic('{% if not student.topic %}Тема не выбрана{% else %}{{ student.topic|escape }}{% endif %}')">
+                                {% if student.topic %}
+                                    {{ student.topic }}
+                                {% else %}
+                                    Тема не выбрана
+                                {% endif %}
+                            </span>
+                            <button type="button"
+                                    class="btn btn-sm btn-outline-secondary ms-2 edit-topic-btn"
+                                    data-student-id="{{ student.id }}"
+                                    title="Редактировать тему">
+                                Ред.
+                            </button>
+                        </div>
+
+                        <!-- Режим редактирования темы (скрыт по умолчанию) -->
+                        <div id="topic-edit-{{ student.id }}" style="display: none;">
+                            <div class="input-group input-group-sm">
+                                <input type="text"
+                                       class="form-control form-control-sm"
+                                       id="topic-input-{{ student.id }}"
+                                       value="{{ student.topic if student.topic else '' }}"
+                                       placeholder="Введите тему диплома">
+                                <button type="button"
+                                        class="btn btn-sm btn-success save-topic-btn"
+                                        data-student-id="{{ student.id }}">
+                                    ✓
+                                </button>
+                                <button type="button"
+                                        class="btn btn-sm btn-secondary cancel-topic-btn"
+                                        data-student-id="{{ student.id }}">
+                                    ✗
+                                </button>
+                            </div>
+                        </div>
+                    </td>
+
+                    <!-- PDF сдан -->
+                    <td class="text-center">
+                        <div class="form-check form-switch d-inline-block">
+                            <input class="form-check-input status-checkbox"
+                                   type="checkbox"
+                                   id="pdf_{{ student.id }}"
+                                   {% if student.pdf_submitted %}checked{% endif %}
+                                   data-student-id="{{ student.id }}"
+                                   data-field="pdf_submitted">
+                        </div>
+                    </td>
+
+                    <!-- Бумажная версия -->
+                    <td class="text-center">
+                        <div class="form-check form-switch d-inline-block">
+                            <input class="form-check-input status-checkbox"
+                                   type="checkbox"
+                                   id="physical_{{ student.id }}"
+                                   {% if student.physical_submitted %}checked{% endif %}
+                                   data-student-id="{{ student.id }}"
+                                   data-field="physical_submitted">
+                        </div>
+                    </td>
+
+                    <!-- Проверка на плагиат -->
+                    <td class="text-center">
+                        <div class="form-check form-switch d-inline-block">
+                            {% if student.course == 4 %}
+                                <input class="form-check-input status-checkbox"
+                                       type="checkbox"
+                                       id="plagiarism_{{ student.id }}"
+                                       {% if student.plagiarism_checked %}checked{% endif %}
+                                       data-student-id="{{ student.id }}"
+                                       data-field="plagiarism_checked">
+                            {% else %}
+                                <input class="form-check-input"
+                                       type="checkbox"
+                                       id="plagiarism_disabled_{{ student.id }}"
+                                       {% if student.plagiarism_checked %}checked{% endif %}
+                                       disabled
+                                       style="opacity: 0.5; cursor: not-allowed;"
+                                       title="Доступно только для 4 курса">
+                            {% endif %}
+                        </div>
+                    </td>
+
+                    <!-- Аннотация -->
+                    <td class="text-center">
+                        <div class="form-check form-switch d-inline-block">
+                            {% if student.course == 4 %}
+                                <input class="form-check-input status-checkbox"
+                                       type="checkbox"
+                                       id="annotation_{{ student.id }}"
+                                       {% if student.annotation_submitted %}checked{% endif %}
+                                       data-student-id="{{ student.id }}"
+                                       data-field="annotation_submitted">
+                            {% else %}
+                                <input class="form-check-input"
+                                       type="checkbox"
+                                       id="annotation_disabled_{{ student.id }}"
+                                       {% if student.annotation_submitted %}checked{% endif %}
+                                       disabled
+                                       style="opacity: 0.5; cursor: not-allowed;"
+                                       title="Доступно только для 4 курса">
+                            {% endif %}
+                        </div>
+                    </td>
+
+                    <!-- Статус -->
+                    <td>
+                        {% if student.topic %}
+                            <span class="badge-status small">В работе</span>
+                        {% else %}
+                            <span class="badge-status small text-danger">Тема не выбрана</span>
+                        {% endif %}
+                    </td>
+
+                    <!-- Действия -->
+                    <td>
+                        <button type="button"
+                                class="btn btn-sm btn-outline-primary save-status-btn"
+                                data-student-id="{{ student.id }}"
+                                style="display: none;">
+                            Сохранить
+                        </button>
+<!--                        <button type="button"-->
+<!--                                class="btn btn-sm btn-outline-info view-archive-btn"-->
+<!--                                data-student-id="{{ student.id }}"-->
+<!--                                data-student-name="{{ student.full_name }}"-->
+<!--                                data-student-course="{{ student.course }}"-->
+<!--                                onclick="openStudentArchive('{{ student.id }}', '{{ student.full_name|escape }}', '{{ student.course }}')">-->
+<!--                            📚-->
+<!--                        </button>-->
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="10" class="text-center text-secondary py-4">
+                        У вас пока нет студентов
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Кнопки действий для преподавателя -->
+    <div class="d-flex justify-content-between align-items-center mt-3">
+        <div>
+            <button type="button" id="saveAllStatusesBtn" class="btn btn-sm btn-success" style="display: none;">
+                Сохранить все статусы
+            </button>
+        </div>
+        <a href="/" class="btn btn-sm btn-outline-secondary">
+            ← Назад к общему списку
+        </a>
+    </div>
+
+    <!-- Статистика для преподавателя -->
+    {% if students %}
+    <div class="mt-4 p-3 bg-light rounded-3">
+        <div class="d-flex gap-4 flex-wrap small">
+            <span>Всего студентов: <span class="fw-medium">{{ students|length }}</span></span>
+            <span>Без темы: <span class="text-danger fw-medium">{{ students|rejectattr('topic')|list|length }}</span></span>
+            <span>PDF сдали: <span class="fw-medium">{{ students|selectattr('pdf_submitted')|list|length }}</span></span>
+            <span>Бумажную сдали: <span class="fw-medium">{{ students|selectattr('physical_submitted')|list|length }}</span></span>
+            {% if students|selectattr('call_status', 'equalto', 'no_calls')|list|length > 0 %}
+            <span class="text-danger fw-medium"> Давно не звонили: {{ students|selectattr('call_status', 'equalto', 'no_calls')|list|length }}</span>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+    {% endif %}
+</div>
+
+<!-- Модальное окно для полной темы -->
+<div class="modal fade" id="topicModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content border-0 shadow-sm">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h6 class="modal-title fw-normal">Тема работы</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p id="fullTopicText" class="mb-0" style="white-space: pre-wrap; word-break: break-word;"></p>
+            </div>
+            <div class="modal-footer border-top-0 pt-0">
+                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно архива студента -->
+<div class="modal fade" id="studentArchiveModal" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow-sm">
+            <div class="modal-header border-bottom-0">
+                <div>
+                    <h5 class="modal-title" id="archiveModalTitle">Архив студента</h5>
+                    <div id="archiveStudentInfo" class="small text-secondary mt-1"></div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Текущая работа -->
+                <div class="mb-4">
+                    <h6 class="fw-normal mb-3"> Текущая работа</h6>
+                    <div id="currentWorkArchive" class="ps-2 small"></div>
+                </div>
+
+                <!-- Архив -->
+                <div>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="fw-normal mb-0"> Архив работ</h6>
+                        <span class="badge bg-secondary" id="archiveCount">0</span>
+                    </div>
+
+                    <!-- Фильтры -->
+                    <div class="btn-group btn-group-sm mb-3">
+                        <input type="radio" class="btn-check" name="archiveFilter" id="allWorks" autocomplete="off" checked>
+                        <label class="btn btn-outline-secondary" for="allWorks">Все</label>
+
+                        <input type="radio" class="btn-check" name="archiveFilter" id="courseworksOnly" autocomplete="off">
+                        <label class="btn btn-outline-secondary" for="courseworksOnly">Курсовые</label>
+
+                        <input type="radio" class="btn-check" name="archiveFilter" id="diplomasOnly" autocomplete="off">
+                        <label class="btn btn-outline-secondary" for="diplomasOnly">Дипломы</label>
+                    </div>
+
+                    <!-- Таблица архива -->
+                    <div class="table-responsive">
+                        <table class="table table-sm align-middle" id="archiveTable">
+                            <thead class="small text-secondary">
+                                <tr>
+                                    <th>Год</th>
+                                    <th>Курс</th>
+                                    <th>Тип</th>
+                                    <th>Тема</th>
+                                    <th>Руководитель</th>
+                                    <th>Оценка</th>
+                                </tr>
+                            </thead>
+                            <tbody id="archiveTableBody"></tbody>
+                        </table>
+                        <div id="noArchiveMessage" class="text-center text-secondary py-4" style="display: none;">
+                            <span style="font-size: 2rem; opacity: 0.3;"></span>
+                            <p class="mt-2 mb-0">У студента пока нет работ в архиве</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-top-0">
+                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="printArchive()">
+                    Экспорт
+                </button>
+                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">
+                    Закрыть
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Подключаем Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+// Моковые данные архива
+const ARCHIVE_MOCK_DATA = {
+    '1': [
+        { year: 2023, course: 2, type: 'coursework', topic: 'Разработка веб-интерфейса для системы учета', advisor: 'Петрова М.И.', grade: 5 },
+        { year: 2024, course: 3, type: 'coursework', topic: 'Проектирование базы данных для интернет-магазина', advisor: 'Сидоров А.В.', grade: 4 }
+    ],
+    '2': [
+        { year: 2023, course: 2, type: 'coursework', topic: 'Анализ алгоритмов сортировки', advisor: 'Иванов И.И.', grade: 5 }
+    ],
+    '3': [
+        { year: 2022, course: 1, type: 'coursework', topic: 'Основы программирования на Python', advisor: 'Петрова М.И.', grade: 4 },
+        { year: 2023, course: 2, type: 'coursework', topic: 'Объектно-ориентированное программирование', advisor: 'Сидоров А.В.', grade: 5 },
+        { year: 2024, course: 3, type: 'diploma', topic: 'Разработка системы автоматизации документооборота', advisor: 'Иванов И.И.', grade: null }
+    ]
+};
+
+// Глобальные переменные
+let currentStudentArchive = [];
+let archiveModal = null;
+
+// ========== ФУНКЦИИ ДЛЯ ТЕМЫ ==========
+function showFullTopic(topicText) {
+    const modalElement = document.getElementById('topicModal');
+    const textElement = document.getElementById('fullTopicText');
+    if (textElement) {
+        textElement.textContent = topicText;
+    }
+    const topicModal = new bootstrap.Modal(modalElement);
+    topicModal.show();
+}
+
+// ========== ФУНКЦИИ ДЛЯ АРХИВА ==========
+function openStudentArchive(studentId, studentName, studentCourse) {
+    const modalElement = document.getElementById('studentArchiveModal');
+    const titleElement = document.getElementById('archiveModalTitle');
+    const infoElement = document.getElementById('archiveStudentInfo');
+
+    titleElement.textContent = `Архив: ${studentName}`;
+    infoElement.textContent = `Курс: ${studentCourse} | ID: ${studentId}`;
+
+    loadArchiveData(studentId);
+
+    if (!archiveModal) {
+        archiveModal = new bootstrap.Modal(modalElement);
+    }
+    archiveModal.show();
+}
+
+function loadArchiveData(studentId) {
+    const archiveTableBody = document.getElementById('archiveTableBody');
+    const archiveCount = document.getElementById('archiveCount');
+    const noArchiveMessage = document.getElementById('noArchiveMessage');
+
+    // В реальном приложении здесь будет запрос к API
+    currentStudentArchive = ARCHIVE_MOCK_DATA[studentId] || [];
+
+    archiveCount.textContent = currentStudentArchive.length;
+
+    if (currentStudentArchive.length === 0) {
+        noArchiveMessage.style.display = 'block';
+        archiveTableBody.innerHTML = '';
+        return;
+    }
+
+    noArchiveMessage.style.display = 'none';
+    renderArchiveTable(currentStudentArchive);
+}
+
+function renderArchiveTable(works) {
+    const archiveTableBody = document.getElementById('archiveTableBody');
+    archiveTableBody.innerHTML = '';
+
+    works.sort((a, b) => b.year - a.year);
+
+    works.forEach(work => {
+        const row = archiveTableBody.insertRow();
+
+        // Год
+        row.insertCell().innerHTML = `<span class="small">${work.year}</span>`;
+
+        // Курс
+        row.insertCell().innerHTML = `<span class="small">${work.course}</span>`;
+
+        // Тип
+        let typeBadge = work.type === 'coursework'
+            ? '<span class="badge bg-light text-dark">Курсовая</span>'
+            : '<span class="badge bg-light text-primary">Диплом</span>';
+        row.insertCell().innerHTML = typeBadge;
+
+        // Тема
+        let topicCell = row.insertCell();
+        topicCell.innerHTML = `<span class="small" style="cursor: pointer;" onclick="showFullTopic('${work.topic.replace(/'/g, "\\'")}')">${work.topic}</span>`;
+        topicCell.style.maxWidth = '300px';
+        topicCell.style.whiteSpace = 'nowrap';
+        topicCell.style.overflow = 'hidden';
+        topicCell.style.textOverflow = 'ellipsis';
+
+        // Руководитель
+        row.insertCell().innerHTML = `<span class="small">${work.advisor || '—'}</span>`;
+
+        // Оценка
+        let gradeCell = row.insertCell();
+        if (work.grade) {
+            let gradeClass = '';
+            if (work.grade === 5) gradeClass = 'text-success';
+            else if (work.grade === 4) gradeClass = 'text-primary';
+            else if (work.grade === 3) gradeClass = 'text-warning';
+            gradeCell.innerHTML = `<span class="fw-medium ${gradeClass}">${work.grade}</span>`;
+        } else {
+            gradeCell.innerHTML = '<span class="small text-secondary">—</span>';
+        }
+    });
+}
+
+function printArchive() {
+    const studentName = document.getElementById('archiveModalTitle').textContent.replace('Архив: ', '');
+    const works = currentStudentArchive;
+
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+        <html>
+            <head>
+                <title>Архив студента: ${studentName}</title>
+                <style>
+                    body { padding: 20px; font-family: system-ui, -apple-system, sans-serif; }
+                    h4 { margin-bottom: 10px; }
+                    hr { margin: 20px 0; border: none; border-top: 1px solid #eee; }
+                    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+                    th { text-align: left; padding: 8px; background: #f8f9fa; border-bottom: 2px solid #dee2e6; }
+                    td { padding: 8px; border-bottom: 1px solid #dee2e6; }
+                    @media print { .no-print { display: none; } }
+                </style>
+            </head>
+            <body>
+                <h4>Архив студента: ${studentName}</h4>
+                <hr>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Год</th>
+                            <th>Курс</th>
+                            <th>Тип</th>
+                            <th>Тема</th>
+                            <th>Руководитель</th>
+                            <th>Оценка</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${works.map(work => `
+                            <tr>
+                                <td>${work.year}</td>
+                                <td>${work.course}</td>
+                                <td>${work.type === 'coursework' ? 'Курсовая' : 'Диплом'}</td>
+                                <td>${work.topic}</td>
+                                <td>${work.advisor || '—'}</td>
+                                <td>${work.grade || '—'}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+                <p class="no-print" style="margin-top: 20px; color: #666;">
+                    * Сгенерировано ${new Date().toLocaleDateString()}
+                </p>
+            </body>
+        </html>
+    `);
+    printWindow.document.close();
+    printWindow.print();
+}
+
+// ========== ФУНКЦИИ ДЛЯ РЕДАКТИРОВАНИЯ ТЕМЫ ==========
+document.addEventListener('DOMContentLoaded', function() {
+    // Редактирование темы
+    document.querySelectorAll('.edit-topic-btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const studentId = this.dataset.studentId;
+
+            document.getElementById(`topic-view-${studentId}`).style.display = 'none';
+            document.getElementById(`topic-edit-${studentId}`).style.display = 'block';
+
+            const input = document.getElementById(`topic-input-${studentId}`);
+            input.focus();
+            input.select();
+        });
+    });
+
+    // Сохранение темы
+    document.querySelectorAll('.save-topic-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const studentId = this.dataset.studentId;
+            const input = document.getElementById(`topic-input-${studentId}`);
+            const newTopic = input.value.trim();
+
+            if (newTopic === '') {
+                showNotification('Тема не может быть пустой!', 'warning');
+                input.focus();
+                return;
+            }
+
+            updateTopic(studentId, newTopic);
+        });
+    });
+
+    // Отмена редактирования
+    document.querySelectorAll('.cancel-topic-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const studentId = this.dataset.studentId;
+            document.getElementById(`topic-view-${studentId}`).style.display = 'flex';
+            document.getElementById(`topic-edit-${studentId}`).style.display = 'none';
+        });
+    });
+
+    // Обработка Enter
+    document.addEventListener('keydown', function(e) {
+        if (e.target.id && e.target.id.startsWith('topic-input-')) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const studentId = e.target.id.replace('topic-input-', '');
+                const newTopic = e.target.value.trim();
+                if (newTopic !== '') {
+                    updateTopic(studentId, newTopic);
+                }
+            } else if (e.key === 'Escape') {
+                const studentId = e.target.id.replace('topic-input-', '');
+                document.getElementById(`topic-view-${studentId}`).style.display = 'flex';
+                document.getElementById(`topic-edit-${studentId}`).style.display = 'none';
+            }
+        }
+    });
+
+    // Функция обновления темы
+    function updateTopic(studentId, newTopic) {
+        fetch('/update-student-topic', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                student_id: parseInt(studentId),
+                topic: newTopic
+            })
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.success) {
+                const topicText = document.getElementById(`topic-text-${studentId}`);
+                topicText.textContent = newTopic;
+                topicText.classList.remove('text-danger');
+
+                document.getElementById(`topic-view-${studentId}`).style.display = 'flex';
+                document.getElementById(`topic-edit-${studentId}`).style.display = 'none';
+
+                const row = document.getElementById(`student-row-${studentId}`);
+                if (row) {
+                    row.classList.remove('table-danger');
+                }
+
+                showNotification('Тема успешно обновлена!', 'success');
+            } else {
+                showNotification('Ошибка: ' + result.error, 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Ошибка:', error);
+            showNotification('Ошибка при сохранении темы!', 'error');
+        });
+    }
+
+    // ========== ФУНКЦИИ ДЛЯ СТАТУСОВ ==========
+    const statusCheckboxes = document.querySelectorAll('.status-checkbox');
+    const saveAllBtn = document.getElementById('saveAllStatusesBtn');
+    let changedStudents = new Set();
+
+    statusCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            const studentId = this.dataset.studentId;
+            changedStudents.add(studentId);
+
+            const saveBtn = document.querySelector(`.save-status-btn[data-student-id="${studentId}"]`);
+            if (saveBtn) saveBtn.style.display = 'inline-block';
+
+            if (saveAllBtn) saveAllBtn.style.display = 'inline-block';
+        });
+    });
+
+    document.querySelectorAll('.save-status-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const studentId = this.dataset.studentId;
+            saveStudentStatus(studentId);
+            changedStudents.delete(studentId);
+            this.style.display = 'none';
+            updateSaveAllButton();
+        });
+    });
+
+    if (saveAllBtn) {
+        saveAllBtn.addEventListener('click', function() {
+            changedStudents.forEach(studentId => {
+                saveStudentStatus(studentId);
+            });
+            changedStudents.clear();
+            this.style.display = 'none';
+
+            document.querySelectorAll('.save-status-btn').forEach(btn => {
+                btn.style.display = 'none';
+            });
+
+            showNotification('Все статусы сохранены!', 'success');
+        });
+    }
+
+    function saveStudentStatus(studentId) {
+        const checkboxes = document.querySelectorAll(`.status-checkbox[data-student-id="${studentId}"]`);
+        const data = { student_id: parseInt(studentId) };
+
+        checkboxes.forEach(checkbox => {
+            data[checkbox.dataset.field] = checkbox.checked;
+        });
+
+        fetch('/update-student-status', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (!result.success) {
+                showNotification('Ошибка: ' + result.error, 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Ошибка:', error);
+            showNotification('Ошибка при сохранении!', 'error');
+        });
+    }
+
+    function updateSaveAllButton() {
+        if (saveAllBtn && changedStudents.size === 0) {
+            saveAllBtn.style.display = 'none';
+        }
+    }
+
+    // ========== УВЕДОМЛЕНИЯ ==========
+    function showNotification(message, type = 'info') {
+        const notification = document.createElement('div');
+        notification.className = `alert alert-${type === 'error' ? 'danger' : type === 'success' ? 'success' : 'info'} alert-dismissible fade show`;
+        notification.style.position = 'fixed';
+        notification.style.top = '20px';
+        notification.style.right = '20px';
+        notification.style.zIndex = '9999';
+        notification.style.minWidth = '300px';
+        notification.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+
+        notification.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+
+        document.body.appendChild(notification);
+
+        setTimeout(() => {
+            notification.remove();
+        }, 3000);
+    }
+
+    // ========== ФИЛЬТРАЦИЯ ПО СТАТУСУ СОЗВОНОВ (ДЛЯ ПРЕПОДАВАТЕЛЯ) ==========
+    const filterButtons = document.querySelectorAll('.filter-btn');
+    const showAllBtn = document.querySelector('.show-all-btn');
+
+    if (filterButtons.length) {
+        filterButtons.forEach(btn => {
+            btn.addEventListener('click', function() {
+                const status = this.dataset.status;
+                filterByCallStatus(status);
+            });
+        });
+    }
+
+    if (showAllBtn) {
+        showAllBtn.addEventListener('click', function() {
+            document.querySelectorAll('tbody tr').forEach(row => {
+                row.style.display = '';
+            });
+            showNotification('Показаны все студенты', 'info');
+        });
+    }
+
+    function filterByCallStatus(status) {
+        const rows = document.querySelectorAll('tbody tr');
+        let visibleCount = 0;
+
+        rows.forEach(row => {
+            const badge = row.querySelector('.call-status-badge');
+            if (badge && badge.classList.contains(`badge-${status}`)) {
+                row.style.display = '';
+                visibleCount++;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+
+        showNotification(`Найдено студентов: ${visibleCount}`, 'info');
+    }
+});
+</script>
+
+<style>
+/* ========== ОСНОВНЫЕ СТИЛИ ========== */
+.container-fluid {
+    padding: 1.5rem;
+}
+
+/* ЗАГОЛОВОК */
+h2 {
+    font-size: 1.5rem;
+    font-weight: 300;
+    color: #212529;
+    margin-bottom: 0.5rem;
+}
+
+/* ВКЛАДКИ - МИНИМАЛИСТИЧНЫЕ */
+.nav-tabs {
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.nav-tabs .nav-link {
+    color: #6c757d;
+    border: none;
+    border-bottom: 2px solid transparent;
+    font-size: 0.9rem;
+    padding: 0.75rem 1rem;
+    background: transparent;
+    transition: all 0.2s ease;
+}
+
+.nav-tabs .nav-link:hover {
+    border-color: transparent;
+    color: #212529;
+    background: #f8f9fa;
+}
+
+.nav-tabs .nav-link.active {
+    color: #212529;
+    border-bottom: 2px solid #212529;
+    background: none;
+    font-weight: 500;
+}
+
+/* ТАБЛИЦА - МИНИМАЛИСТИЧНАЯ */
+.table-responsive {
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    overflow: hidden;
+    background: white;
+    margin-bottom: 1rem;
+}
+
+.table {
+    font-size: 0.85rem;
+    margin-bottom: 0;
+    background: white;
+}
+
+.table thead th {
+    padding: 0.75rem 0.5rem;
+    border-bottom: 1px solid #e0e0e0;
+    color: #6c757d;
+    font-weight: 500;
+    background: #f8f9fa;
+    white-space: nowrap;
+}
+
+.table td {
+    padding: 0.75rem 0.5rem;
+    border-color: #f0f0f0;
+    vertical-align: middle;
+    background: white;
+}
+
+.table tbody tr:hover {
+    background-color: #fafafa;
+}
+
+.table tbody tr:hover td {
+    background-color: #fafafa;
+}
+
+/* КРАСНОЕ ВЫДЕЛЕНИЕ ДЛЯ СТУДЕНТОВ БЕЗ ТЕМЫ */
+.table tr.table-danger {
+    background-color: #fff5f5;
+}
+
+.table tr.table-danger td {
+    background-color: #fff5f5;
+    color: #dc3545;
+}
+
+.table tr.table-danger:hover {
+    background-color: #ffeaea;
+}
+
+.table tr.table-danger:hover td {
+    background-color: #ffeaea;
+}
+
+/* ЯЧЕЙКА ТЕМЫ - КЛИКАБЕЛЬНАЯ */
+.topic-cell {
+    max-width: 300px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    position: relative;
+}
+
+.topic-text {
+    cursor: pointer;
+    display: inline-block;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.topic-text:hover {
+    text-decoration: underline;
+    color: #0066cc;
+}
+
+/* ЧЕКБОКСЫ */
+.form-check-input {
+    width: 2.5em;
+    height: 1.25em;
+    cursor: pointer;
+    border-radius: 2em;
+    border: 1px solid #ced4da;
+    transition: all 0.2s ease;
+    margin: 0;
+}
+
+.form-check-input:checked {
+    background-color: #28a745;
+    border-color: #28a745;
+}
+
+.form-check-input:focus {
+    box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+    border-color: #28a745;
+}
+
+.form-check-input:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background-color: #e9ecef;
+}
+
+.form-check-input:disabled:hover {
+    transform: none;
+}
+
+/* БЕЙДЖИ */
+.badge {
+    font-weight: 400;
+    font-size: 0.7rem;
+    padding: 0.3rem 0.6rem;
+    border-radius: 4px;
+}
+
+.badge.bg-primary {
+    background-color: #f0f7ff !important;
+    color: #0066cc;
+}
+
+.badge.bg-danger {
+    background-color: #fff5f5 !important;
+    color: #dc3545;
+}
+
+.badge.bg-success {
+    background-color: #f0fff4 !important;
+    color: #28a745;
+}
+
+.badge-status {
+    display: inline-block;
+    padding: 0.2rem 0.4rem;
+    background-color: #f8f9fa;
+    color: #495057;
+    border-radius: 4px;
+    font-weight: 400;
+    font-size: 0.7rem;
+}
+
+.badge-status.text-danger {
+    background-color: #fff5f5;
+    color: #dc3545 !important;
+}
+
+/* СТАТУСЫ СОЗВОНОВ */
+.status-icon {
+    font-size: 0.9rem;
+    opacity: 0.8;
+}
+
+.call-status-badge {
+    font-size: 0.65rem;
+    padding: 0.2rem 0.4rem;
+    border-radius: 4px;
+    font-weight: 400;
+}
+
+.badge-no_calls {
+    background-color: #fff5f5;
+    color: #dc3545;
+}
+
+.badge-irregular_calls {
+    background-color: #fff8e5;
+    color: #ff9800;
+}
+
+.badge-regular_calls {
+    background-color: #f0fff4;
+    color: #28a745;
+}
+
+/* КНОПКИ */
+.btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    border-radius: 4px;
+}
+
+.btn-outline-secondary {
+    color: #6c757d;
+    border-color: #dee2e6;
+    background: white;
+}
+
+.btn-outline-secondary:hover {
+    background-color: #f8f9fa;
+    border-color: #ced4da;
+    color: #212529;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.btn-success {
+    background-color: #28a745;
+    border-color: #28a745;
+    color: white;
+}
+
+.btn-success:hover {
+    background-color: #218838;
+    border-color: #1e7e34;
+}
+
+.btn-outline-primary {
+    color: #0066cc;
+    border-color: #0066cc;
+}
+
+.btn-outline-primary:hover {
+    background-color: #0066cc;
+    color: white;
+}
+
+.btn-outline-info {
+    color: #17a2b8;
+    border-color: #17a2b8;
+}
+
+.btn-outline-info:hover {
+    background-color: #17a2b8;
+    color: white;
+}
+
+/* ССЫЛКИ */
+a {
+    color: #212529;
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+.student-link {
+    position: relative;
+}
+
+/* АДМИН БЕЙДЖ */
+.admin-badge {
+    font-size: 0.8rem;
+    opacity: 0.5;
+}
+
+/* ИНПУТЫ */
+.input-group-sm {
+    width: 100%;
+    max-width: 300px;
+}
+
+.input-group-sm .form-control {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    border: 1px solid #ced4da;
+    border-radius: 4px 0 0 4px;
+}
+
+.input-group-sm .form-control:focus {
+    border-color: #80bdff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+    outline: none;
+}
+
+/* СТАТИСТИКА */
+.bg-light {
+    background-color: #f8f9fa !important;
+    border-radius: 8px;
+}
+
+.rounded-3 {
+    border-radius: 8px;
+}
+
+.border-top {
+    border-top: 1px solid #e0e0e0 !important;
+}
+
+/* ТЕКСТ */
+.text-secondary {
+    color: #6c757d !important;
+}
+
+.text-danger {
+    color: #dc3545 !important;
+}
+
+.fw-medium {
+    font-weight: 500;
+}
+
+.small {
+    font-size: 0.75rem;
+}
+
+/* МОДАЛЬНЫЕ ОКНА */
+.modal-content {
+    border-radius: 12px;
+}
+
+.modal-header {
+    padding: 1rem 1.5rem;
+}
+
+.modal-body {
+    padding: 1.5rem;
+}
+
+.modal-footer {
+    padding: 1rem 1.5rem;
+}
+
+/* АДАПТИВНОСТЬ */
+@media (max-width: 768px) {
+    .container-fluid {
+        padding: 1rem;
+    }
+
+    h2 {
+        font-size: 1.25rem;
+    }
+
+    .nav-tabs .nav-link {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.8rem;
+    }
+
+    .table td, .table th {
+        padding: 0.5rem 0.25rem;
+        font-size: 0.75rem;
+    }
+
+    .btn-sm {
+        padding: 0.2rem 0.4rem;
+        font-size: 0.7rem;
+    }
+
+    .input-group-sm {
+        max-width: 100%;
+    }
+
+    .d-flex.gap-4 {
+        gap: 1rem !important;
+        flex-wrap: wrap;
+    }
+}
+</style>
+{% endblock %}

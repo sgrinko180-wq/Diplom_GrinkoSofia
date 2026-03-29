@@ -1,0 +1,276 @@
+{% extends "base.html" %}
+
+{% block title %}Архив работ{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <!-- Заголовок -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex align-items-center gap-2 mb-2">
+                <a href="/my-students" class="text-secondary text-decoration-none small">← Студенты</a>
+                <span class="text-secondary">/</span>
+                <span class="small text-secondary">Архив</span>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <h2 class="fw-light mb-1">Архив работ</h2>
+                    <div class="text-muted small">
+                        {{ current_academic_year }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Вкладки по годам (без текущего года) -->
+    {% if years %}
+    {% set filtered_years = [] %}
+    {% for year in years %}
+        {% if year != current_academic_year %}
+            {% set filtered_years = filtered_years.append(year) %}
+        {% endif %}
+    {% endfor %}
+
+    {% if filtered_years %}
+    <div class="border-bottom mb-3">
+        <ul class="nav nav-tabs border-bottom-0" id="yearTabs" role="tablist">
+            {% for year in filtered_years %}
+            <li class="nav-item" role="presentation">
+                <button class="nav-link {% if loop.first %}active{% endif %} px-3 py-2"
+                        id="year-{{ year|replace('/', '-') }}-tab"
+                        data-bs-toggle="tab"
+                        data-bs-target="#year-{{ year|replace('/', '-') }}"
+                        type="button"
+                        role="tab">
+                    {{ year }}
+                    <span class="ms-1 text-secondary small">{{ works_by_year[year]|length if works_by_year[year] else 0 }}</span>
+                </button>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <!-- Содержимое вкладок -->
+    <div class="tab-content" id="yearTabsContent">
+        {% for year in filtered_years %}
+        <div class="tab-pane fade {% if loop.first %}show active{% endif %}"
+             id="year-{{ year|replace('/', '-') }}"
+             role="tabpanel">
+
+            {% set works = works_by_year[year] %}
+
+            {% if works %}
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle">
+                        <thead class="small text-secondary">
+                            <tr>
+                                <th>Студент</th>
+                                <th>Курс</th>
+                                <th>Тип</th>
+                                <th>Тема</th>
+                                <th>Руководитель</th>
+                                <th class="text-center">Оценка</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for work in works %}
+                            <tr>
+                                <td>
+                                    <a href="{% if is_admin %}/admin/student/{{ work.student_id }}{% else %}/teacher/student/{{ work.student_id }}{% endif %}"
+                                       class="text-dark text-decoration-none">
+                                        {{ work.student_name }}
+                                    </a>
+                                </td>
+                                <td class="text-secondary small">{{ work.course }}</td>
+                                <td>
+                                    {% if work.work_type == 'coursework' %}
+                                    <span class="badge-coursework small">Курсовая</span>
+                                    {% else %}
+                                    <span class="badge-diploma small">Диплом</span>
+                                    {% endif %}
+                                </td>
+                                <td style="max-width: 250px;">
+                                    <a href="#" class="topic-clickable"
+                                       onclick="showFullTopic('{{ work.title|escape }}'); return false;">
+                                        {{ work.title }}
+                                    </a>
+                                </td>
+                                <td class="small">{{ work.supervisor_name or "—" }}</td>
+                                <td class="text-center">
+                                    {% if work.grade %}
+                                        {% if work.grade == 'отлично' %}
+                                        <span class="text-success small">5</span>
+                                        {% elif work.grade == 'хорошо' %}
+                                        <span class="text-primary small">4</span>
+                                        {% elif work.grade == 'удовлетворительно' %}
+                                        <span class="text-warning small">3</span>
+                                        {% else %}
+                                        <span class="text-secondary small">{{ work.grade }}</span>
+                                        {% endif %}
+                                    {% else %}
+                                    <span class="text-secondary small">—</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Статистика по году -->
+                <div class="mt-3 pt-2 small text-secondary border-top">
+                    <div class="d-flex flex-wrap gap-4">
+                        <span>Всего: <span class="text-dark">{{ works|length }}</span></span>
+                        <span>PDF: <span class="text-dark">{{ works|selectattr('pdf_submitted')|list|length }}</span></span>
+                        <span>Бумага: <span class="text-dark">{{ works|selectattr('physical_submitted')|list|length }}</span></span>
+                    </div>
+                </div>
+            {% else %}
+                <div class="text-center py-5">
+                    <p class="text-secondary small mb-0">Нет работ за {{ year }} год</p>
+                </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-5">
+        <p class="text-secondary small mb-3">В архиве нет работ за предыдущие годы</p>
+    </div>
+    {% endif %}
+    {% else %}
+    <div class="text-center py-5">
+        <p class="text-secondary small mb-3">Архив пуст</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Модальное окно для полной темы -->
+<div class="modal fade" id="topicModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content border-0 shadow-sm">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h6 class="modal-title fw-normal">Тема работы</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p id="fullTopicText" class="mb-0" style="white-space: pre-wrap; word-break: break-word;"></p>
+            </div>
+            <div class="modal-footer border-top-0 pt-0">
+                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Функция показа полной темы в модальном окне
+function showFullTopic(topicText) {
+    const modalElement = document.getElementById('topicModal');
+    const textElement = document.getElementById('fullTopicText');
+
+    if (textElement) {
+        textElement.textContent = topicText;
+    }
+
+    const topicModal = new bootstrap.Modal(modalElement);
+    topicModal.show();
+}
+
+// Инициализация
+document.addEventListener('DOMContentLoaded', function() {
+    // Активируем первую вкладку
+    const firstTab = document.querySelector('#yearTabs .nav-link');
+    if (firstTab) {
+        new bootstrap.Tab(firstTab).show();
+    }
+});
+</script>
+
+<style>
+/* Минималистичные вкладки */
+.nav-tabs .nav-link {
+    color: #6c757d;
+    border: none;
+    border-bottom: 2px solid transparent;
+    font-size: 0.9rem;
+}
+.nav-tabs .nav-link:hover {
+    border-color: transparent;
+    color: #212529;
+}
+.nav-tabs .nav-link.active {
+    color: #212529;
+    border-bottom: 2px solid #212529;
+    background: none;
+}
+
+/* Минималистичная таблица */
+.table {
+    font-size: 0.85rem;
+}
+.table td {
+    padding: 0.75rem 0.5rem;
+    border-color: #f0f0f0;
+}
+.table thead th {
+    padding: 0.75rem 0.5rem;
+    border-bottom: 1px solid #e0e0e0;
+    color: #6c757d;
+    font-weight: 500;
+}
+.table tbody tr:hover {
+    background-color: #fafafa;
+}
+
+/* ВЫДЕЛЕНИЕ ДЛЯ ТИПОВ РАБОТ */
+.badge-coursework {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    background-color: #f0f7ff;
+    color: #0066cc;
+    border-radius: 4px;
+    font-weight: 400;
+}
+
+.badge-diploma {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    background-color: #f5f0ff;
+    color: #6b46c1;
+    border-radius: 4px;
+    font-weight: 400;
+}
+
+/* Кликабельная тема */
+.topic-clickable {
+    display: inline-block;
+    width: 100%;
+    cursor: pointer;
+    color: inherit;
+    text-decoration: none;
+    border-bottom: none;
+}
+
+.topic-clickable:hover {
+    color: inherit;
+    text-decoration: none;
+    background-color: #f5f5f5;
+}
+
+/* Кнопки */
+.btn-link {
+    text-decoration: none;
+}
+.btn-link:hover {
+    text-decoration: underline;
+}
+
+/* Модальное окно */
+.modal-content {
+    border-radius: 0;
+}
+</style>
+{% endblock %}

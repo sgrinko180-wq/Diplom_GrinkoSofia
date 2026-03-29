@@ -1,0 +1,291 @@
+{% extends "base.html" %}
+{% block title %}Список студентов{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <!-- Заголовок -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <h2 class="fw-light mb-1">Список студентов</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Вкладки по курсам -->
+    <div class="border-bottom mb-3">
+        <ul class="nav nav-tabs border-bottom-0" id="courseTabs" role="tablist">
+            {% set courses = students | map(attribute='course') | unique | sort %}
+            {% for course in courses %}
+            {% set students_in_course = students | selectattr("course", "equalto", course) | list %}
+            {% set no_topic_count = students_in_course | selectattr("topic", "equalto", None) | list | length %}
+            <li class="nav-item" role="presentation">
+                <button class="nav-link {% if loop.first %}active{% endif %} px-3 py-2"
+                        id="course-{{ course }}-tab"
+                        data-bs-toggle="tab"
+                        data-bs-target="#course-{{ course }}"
+                        type="button"
+                        role="tab">
+                    {{ course }} курс
+                    <span class="ms-1 text-secondary small">{{ students_in_course|length }}</span>
+                    {% if no_topic_count > 0 %}
+                        <span class="ms-1 text-danger small">без темы: {{ no_topic_count }}</span>
+                    {% endif %}
+                </button>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <div class="tab-content" id="courseTabsContent">
+        {% for course in courses %}
+        <div class="tab-pane fade {% if loop.first %}show active{% endif %}"
+             id="course-{{ course }}"
+             role="tabpanel">
+
+            {% set students_in_course = students | selectattr("course", "equalto", course) | list %}
+
+            <div class="table-responsive">
+                <table class="table table-sm align-middle">
+                    <thead class="small text-secondary">
+                        <tr>
+                            <th style="width: 5%">№</th>
+                            <th style="width: 20%">Студент</th>
+                            <th style="width: 35%">Тема</th>
+                            <th style="width: 25%">Руководитель</th>
+                            <th style="width: 15%">Статус</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for student in students_in_course %}
+                        <tr id="student-{{ student.id }}"
+                            {% if not student.topic %}class="table-danger"{% endif %}>
+                            <td class="text-secondary small">{{ loop.index }}</td>
+                            <td>
+                                <a href="/student/{{ student.id }}"
+                                   class="{% if not student.topic %}text-danger{% else %}text-dark{% endif %} text-decoration-none">
+                                    {{ student.full_name }}
+                                </a>
+                            </td>
+                            <td class="topic-cell {% if not student.topic %}text-danger{% endif %}"
+                                onclick="showFullTopic('{% if not student.topic %}Тема не выбрана{% else %}{{ student.topic|escape }}{% endif %}{% if student.comments %} ({{ student.comments|escape }}){% endif %}')">
+                                {% if student.topic %}
+                                    <span class="topic-text">{{ student.topic }}</span>
+                                    {% if student.work_type %}
+                                        {% if student.work_type == 'coursework' %}
+                                            <span class="badge-coursework ms-1 small">Курсовая</span>
+                                        {% else %}
+                                            <span class="badge-diploma ms-1 small">Диплом</span>
+                                        {% endif %}
+                                    {% endif %}
+                                {% else %}
+                                    Тема не выбрана
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if student.advisor_name %}
+                                    <div class="d-flex align-items-center">
+                                        <span class="small">{{ student.advisor_name }}</span>
+                                        {% if student.advisor_link and student.advisor_link != "#" %}
+                                            <a href="{{ student.advisor_link }}"
+                                               target="_blank"
+                                               class="text-secondary text-decoration-none small ms-1">↗</a>
+                                        {% endif %}
+                                    </div>
+                                {% else %}
+                                    <span class="text-secondary small">—</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if student.topic %}
+                                    <span class="badge-status small">В работе</span>
+                                {% else %}
+                                    <span class="badge-status small text-danger">Тема не выбрана</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Статистика по курсу -->
+            <div class="mt-3 pt-2 small text-secondary border-top">
+                <div class="d-flex gap-4">
+                    <span>Всего: <span class="text-dark">{{ students_in_course|length }}</span></span>
+                    <span>С темой: <span class="text-dark">{{ students_in_course|selectattr('topic')|list|length }}</span></span>
+                    <span>Без темы: <span class="text-danger">{{ students_in_course|rejectattr('topic')|list|length }}</span></span>
+                </div>
+            </div>
+
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Модальное окно для полной темы -->
+<div class="modal fade" id="topicModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content border-0 shadow-sm">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h6 class="modal-title fw-normal">Тема работы</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p id="fullTopicText" class="mb-0" style="white-space: pre-wrap; word-break: break-word;"></p>
+            </div>
+            <div class="modal-footer border-top-0 pt-0">
+                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Стили -->
+<style>
+/* ВКЛАДКИ - МИНИМАЛИСТИЧНЫЕ */
+.nav-tabs .nav-link {
+    color: #6c757d;
+    border: none;
+    border-bottom: 2px solid transparent;
+    font-size: 0.9rem;
+}
+.nav-tabs .nav-link:hover {
+    border-color: transparent;
+    color: #212529;
+}
+.nav-tabs .nav-link.active {
+    color: #212529;
+    border-bottom: 2px solid #212529;
+    background: none;
+}
+
+/* ТАБЛИЦА - МИНИМАЛИСТИЧНАЯ */
+.table {
+    font-size: 0.85rem;
+}
+.table td {
+    padding: 0.75rem 0.5rem;
+    border-color: #f0f0f0;
+}
+.table thead th {
+    padding: 0.75rem 0.5rem;
+    border-bottom: 1px solid #e0e0e0;
+    color: #6c757d;
+    font-weight: 500;
+}
+.table tbody tr:hover {
+    background-color: #fafafa;
+}
+
+/* КРАСНОЕ ВЫДЕЛЕНИЕ ДЛЯ СТУДЕНТОВ БЕЗ ТЕМЫ */
+.table tr.table-danger {
+    background-color: #fff5f5;
+}
+.table tr.table-danger td {
+    background-color: transparent;
+}
+.table tr.table-danger:hover {
+    background-color: #ffeaea;
+}
+.text-danger {
+    color: #dc3545 !important;
+}
+
+/* ЯЧЕЙКА ТЕМЫ - КЛИКАБЕЛЬНАЯ, НО НЕ ССЫЛКА */
+.topic-cell {
+    max-width: 350px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: pointer;
+    position: relative;
+}
+.topic-cell:hover {
+    background-color: #f8f9fa;
+}
+.topic-cell.text-danger:hover {
+    background-color: #fff5f5;
+}
+.topic-text {
+    display: inline;
+}
+
+/* ВЫДЕЛЕНИЕ ДЛЯ ТИПОВ РАБОТ */
+.badge-coursework {
+    display: inline-block;
+    padding: 0.2rem 0.4rem;
+    background-color: #f0f7ff;
+    color: #0066cc;
+    border-radius: 4px;
+    font-weight: 400;
+    font-size: 0.7rem;
+}
+.badge-diploma {
+    display: inline-block;
+    padding: 0.2rem 0.4rem;
+    background-color: #f5f0ff;
+    color: #6b46c1;
+    border-radius: 4px;
+    font-weight: 400;
+    font-size: 0.7rem;
+}
+
+/* СТАТУСЫ */
+.badge-status {
+    display: inline-block;
+    padding: 0.2rem 0.4rem;
+    background-color: #f8f9fa;
+    color: #495057;
+    border-radius: 4px;
+    font-weight: 400;
+    font-size: 0.7rem;
+}
+.badge-status.text-danger {
+    background-color: #fff5f5;
+    color: #dc3545 !important;
+}
+
+/* ССЫЛКИ */
+a {
+    color: #212529;
+    text-decoration: none;
+}
+a:hover {
+    text-decoration: underline;
+}
+
+/* КАРТОЧКА СТАТИСТИКИ ЗАМЕНЕНА НА МИНИМАЛИСТИЧНУЮ СТРОКУ */
+.border-top {
+    border-top: 1px solid #e0e0e0 !important;
+}
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+// Функция показа полной темы в модальном окне
+function showFullTopic(topicText) {
+    const modalElement = document.getElementById('topicModal');
+    const textElement = document.getElementById('fullTopicText');
+
+    if (textElement) {
+        textElement.textContent = topicText;
+    }
+
+    const topicModal = new bootstrap.Modal(modalElement);
+    topicModal.show();
+}
+
+// Инициализация при загрузке страницы
+document.addEventListener('DOMContentLoaded', function() {
+    // Активация вкладок Bootstrap
+    var tabEls = document.querySelectorAll('#courseTabs button[data-bs-toggle="tab"]');
+    tabEls.forEach(function(tabEl) {
+        new bootstrap.Tab(tabEl);
+    });
+});
+</script>
+{% endblock %}

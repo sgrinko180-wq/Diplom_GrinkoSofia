@@ -1,0 +1,465 @@
+{% extends "base.html" %}
+
+{% block title %}Карточка студента{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Заголовок -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h4 mb-1 text-dark">Карточка студента</h1>
+            <p class="text-muted mb-0 small">Подробная информация</p>
+        </div>
+        <a href="/" class="btn btn-sm btn-outline-secondary">
+            ← Назад к списку
+        </a>
+    </div>
+
+    <!-- Основная информация -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body p-4">
+            <!-- ФИО и курс -->
+            <div class="mb-4 pb-3 border-bottom">
+                <h2 class="h5 mb-2">{{ student.full_name }}</h2>
+                <div class="d-flex align-items-center">
+                    <span class="badge bg-light text-dark border me-2 py-1 px-2">
+                        {{ student.course }} курс
+                    </span>
+                    {% if student.topic %}
+                        <span class="badge bg-success-subtle text-success border border-success-subtle py-1 px-2">
+                            Тема выбрана
+                        </span>
+                    {% else %}
+                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle py-1 px-2">
+                            Тема не выбрана
+                        </span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Детальная информация -->
+            <div class="row">
+                <!-- Тема -->
+                <div class="col-md-6 mb-4">
+                    <div class="mb-3">
+                        <div class="text-muted small mb-2">Тема работы</div>
+                        {% if student.topic %}
+                            <div class="p-3 bg-light rounded">
+                                <p class="mb-0 text-dark">{{ student.topic }}</p>
+                                {% if student.work_type %}
+                                    <span class="badge {% if student.work_type == 'coursework' %}bg-info{% else %}bg-warning{% endif %} text-dark mt-2 py-1 px-2">
+                                        {% if student.work_type == 'coursework' %}Курсовая работа{% else %}Дипломная работа{% endif %}
+                                    </span>
+                                {% endif %}
+                            </div>
+                        {% else %}
+                            <div class="p-3 bg-danger-subtle rounded border border-danger-subtle">
+                                <p class="mb-0 text-danger">Тема не выбрана</p>
+                                <small class="text-muted">Необходимо выбрать тему работы</small>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Руководитель -->
+                <div class="col-md-6 mb-4">
+                    <div class="mb-3">
+                        <div class="text-muted small mb-2">Научный руководитель</div>
+                        {% if student.advisor_name %}
+                            <div class="p-3 bg-light rounded">
+                                {% if student.advisor_link and student.advisor_link != "#" %}
+                                    <a href="{{ student.advisor_link }}"
+                                       target="_blank"
+                                       class="text-decoration-none d-flex align-items-center justify-content-between">
+                                        <span class="text-dark">{{ student.advisor_name }}</span>
+                                        <span class="text-muted small">↗</span>
+                                    </a>
+                                {% else %}
+                                    <span class="text-dark">{{ student.advisor_name }}</span>
+                                {% endif %}
+                            </div>
+                        {% else %}
+                            <div class="p-3 bg-light rounded">
+                                <span class="text-muted">Не назначен</span>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+{% if current_user.role != 'admin' %}
+<!-- ========== БЛОК АРХИВА РАБОТ ========== -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-transparent border-0 px-4 pt-4 pb-0">
+                <h5 class="mb-0 fw-normal">Архив предыдущих работ</h5>
+                <p class="text-muted small mb-0 mt-1">Предыдущие курсовые и дипломные работы студента</p>
+            </div>
+            <div class="card-body px-4 pb-4 pt-3">
+
+                {# Вычисляем текущий учебный год #}
+                {% set current_year = now().year %}
+                {% set current_academic_year = (current_year-1) ~ '/' ~ current_year %}
+
+                {# Создаем список работ не за текущий год #}
+                {% set previous_works = [] %}
+                {% for work in archive_works %}
+                    {% if work.academic_year != current_academic_year %}
+                        {# Временно добавляем отладочный вывод #}
+                        <div style="display: none;">Найдена работа: {{ work.academic_year }}</div>
+                        {% set previous_works = previous_works.append(work) %}
+                    {% endif %}
+                {% endfor %}
+
+                {% if previous_works|length > 0 %}
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover align-middle">
+                            <thead class="small text-muted">
+                                <tr>
+                                    <th>Учебный год</th>
+                                    <th>Курс</th>
+                                    <th>Тип работы</th>
+                                    <th>Название работы</th>
+                                    <th>Тема</th>
+                                    <th>Руководитель</th>
+                                    <th>Оценка</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for work in previous_works %}
+                                    <tr>
+                                        <td>
+                                            <span class="fw-medium">{{ work.academic_year }}</span>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-light text-dark border-0">{{ work.course }} курс</span>
+                                        </td>
+                                        <td>
+{% if work.work_type == 'coursework' %}
+    <span class="badge-custom badge-coursework">
+        <i class="bi bi-file-text me-1"></i>Курсовая
+    </span>
+{% else %}
+    <span class="badge-custom badge-diploma">
+        <i class="bi bi-file-earmark-text me-1"></i>Диплом
+    </span>
+{% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="small">{{ work.title }}</span>
+                                        </td>
+                                        <td>
+                                            {% if work.topic %}
+                                                <span class="archive-topic small"
+                                                      onclick="showFullArchiveTopic('{{ work.topic|escape }}'{% if work.comments %}, '{{ work.comments|escape }}'{% endif %})">
+                                                    {{ work.topic }}
+                                                </span>
+                                            {% else %}
+                                                <span class="text-muted small">—</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="small">{{ work.supervisor_name or work.advisor_name or '—' }}</span>
+                                        </td>
+                                        <td>
+                                            {% if work.grade %}
+                                                {% if work.grade == 'отлично' or work.grade == '5' %}
+                                                    <span class="badge bg-success">Отлично</span>
+                                                {% elif work.grade == 'хорошо' or work.grade == '4' %}
+                                                    <span class="badge bg-primary">Хорошо</span>
+                                                {% elif work.grade == 'удовлетворительно' or work.grade == '3' %}
+                                                    <span class="badge bg-warning">Удовл.</span>
+                                                {% else %}
+                                                    <span class="badge bg-secondary">{{ work.grade }}</span>
+                                                {% endif %}
+                                            {% else %}
+                                                <span class="text-muted small">—</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Ссылка на полный архив -->
+                    <div class="mt-3 text-end">
+                        <a href="/archive" class="btn btn-sm btn-outline-secondary">
+                            Перейти в архив →
+                        </a>
+                    </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <div class="mb-3 text-muted">
+                            <svg width="40" height="40" fill="currentColor" viewBox="0 0 16 16">
+                                <path d="M9.5 0h-7A1.5 1.5 0 0 0 1 1.5v13A1.5 1.5 0 0 0 2.5 16h10a1.5 1.5 0 0 0 1.5-1.5V4.5L9.5 0zm0 1v3.5a.5.5 0 0 0 .5.5h3.5V14.5a.5.5 0 0 1-.5.5h-10a.5.5 0 0 1-.5-.5v-13a.5.5 0 0 1 .5-.5h7z"/>
+                                <path d="M4 6h7v1H4V6zm0 2h7v1H4V8zm0 2h4v1H4v-1z"/>
+                            </svg>
+                        </div>
+                        <h6 class="text-muted fw-normal mb-2">Нет архивных работ</h6>
+                        <p class="text-muted small mb-3">
+                            {% if archive_works and archive_works|length > 0 %}
+                                Все работы за текущий год ({{ current_academic_year }})
+                            {% else %}
+                                У этого студента пока нет работ в архиве
+                            {% endif %}
+                        </p>
+                        <a href="/archive" class="btn btn-sm btn-outline-primary">
+                            Перейти в архив для добавления
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<style>
+/* Минималистичные стили */
+.container-fluid {
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+/* Карточка */
+.card {
+    border-radius: 8px;
+    background: white;
+    border: 1px solid #dee2e6;
+}
+
+.card-header {
+    background: transparent;
+    border-bottom: none;
+}
+
+/* Заголовки */
+h1, h2, h3, h4, h5, h6 {
+    font-weight: 500;
+    color: #333;
+}
+
+h1 { font-size: 1.25rem; }
+h2 { font-size: 1.125rem; }
+h3 { font-size: 1rem; }
+h4 { font-size: 0.875rem; }
+h5 { font-size: 0.9rem; }
+h6 { font-size: 0.85rem; }
+
+/* Текст */
+.text-muted { color: #6c757d !important; }
+.text-dark { color: #333 !important; }
+.text-danger { color: #dc3545 !important; }
+.text-info { color: #0dcaf0 !important; }
+.text-warning { color: #ffc107 !important; }
+.text-success { color: #198754 !important; }
+.text-primary { color: #0d6efd !important; }
+
+/* Бейджи для архивных работ (как в другом коде) */
+.badge-custom {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.35rem 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    border-radius: 6px;
+    line-height: 1;
+    white-space: nowrap;
+    background: var(--primary-light);
+    color: var(--primary);
+}
+
+.badge-custom i {
+    font-size: 0.7rem;
+}
+
+/* Специфичные бейджи для типов работ */
+.badge-coursework {
+    background: var(--primary-light);
+    color: var(--primary);
+}
+
+.badge-diploma {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.badge-grade-excellent {
+    background: #d4edda;
+    color: #155724;
+}
+
+.badge-grade-good {
+    background: #d1ecf1;
+    color: #0c5460;
+}
+
+.badge-grade-satisfactory {
+    background: #fff3cd;
+    color: #856404;
+}
+
+/* Старые бейджи (оставляем для обратной совместимости) */
+.badge {
+    font-weight: 400;
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+}
+
+.bg-light { background-color: #f8f9fa !important; }
+.bg-success-subtle { background-color: #d1e7dd !important; }
+.bg-danger-subtle { background-color: #f8d7da !important; }
+.bg-info-subtle { background-color: #cff4fc !important; }
+.bg-warning-subtle { background-color: #fff3cd !important; }
+.bg-primary-subtle { background-color: #cfe2ff !important; }
+.bg-secondary-subtle { background-color: #e9ecef !important; }
+
+.bg-info { background-color: #0dcaf0 !important; }
+.bg-warning { background-color: #ffc107 !important; }
+.bg-success { background-color: #198754 !important; }
+.bg-primary { background-color: #0d6efd !important; }
+.bg-secondary { background-color: #6c757d !important; }
+
+/* Таблица */
+.table {
+    font-size: 0.85rem;
+}
+
+.table td {
+    padding: 0.65rem 0.1rem;
+    border-color: #f0f0f0;
+    vertical-align: middle;
+}
+
+.table thead th {
+    padding: 0.65rem 0.1rem;
+    border-bottom: 1px solid #e0e0e0;
+    color: #6c757d;
+    font-weight: 500;
+    font-size: 0.75rem;
+}
+
+.table-hover tbody tr:hover {
+    background-color: #fafafa;
+}
+
+/* Ячейка темы архивной работы */
+.archive-topic {
+    max-width: 250px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: pointer;
+    display: block;
+    color: #495057;
+    transition: color 0.2s ease;
+}
+
+.archive-topic:hover {
+    color: #0d6efd;
+    text-decoration: underline;
+}
+
+/* Кнопки */
+.btn {
+    border-radius: 6px;
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 400;
+    border: 1px solid;
+}
+
+.btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8125rem;
+}
+
+.btn-outline-secondary {
+    color: #6c757d;
+    border-color: #dee2e6;
+    background: white;
+}
+
+.btn-outline-secondary:hover {
+    background-color: #f8f9fa;
+    border-color: #adb5bd;
+    color: #495057;
+}
+
+.btn-outline-primary {
+    color: #0d6efd;
+    border-color: #0d6efd;
+    background: white;
+}
+
+.btn-outline-primary:hover {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+    color: white;
+}
+
+/* Границы и отступы */
+.border-bottom {
+    border-bottom: 1px solid #dee2e6 !important;
+}
+
+.border-top {
+    border-top: 1px solid #dee2e6 !important;
+}
+
+.rounded {
+    border-radius: 6px;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+    .container-fluid {
+        padding: 1rem !important;
+    }
+
+    .table-responsive {
+        font-size: 0.75rem;
+    }
+
+    .badge, .badge-custom {
+        font-size: 0.65rem;
+        padding: 0.15rem 0.3rem;
+    }
+}
+</style>
+
+<script>
+// Функция показа полной темы архивной работы
+function showFullArchiveTopic(topic, comments = null) {
+    const modalElement = document.getElementById('archiveTopicModal');
+    const textElement = document.getElementById('fullArchiveTopicText');
+    const commentsElement = document.getElementById('archiveComments');
+    const commentsTextElement = document.getElementById('archiveCommentsText');
+
+    if (textElement) {
+        textElement.textContent = topic;
+    }
+
+    if (comments && commentsElement && commentsTextElement) {
+        commentsTextElement.textContent = comments;
+        commentsElement.classList.remove('d-none');
+    } else if (commentsElement) {
+        commentsElement.classList.add('d-none');
+    }
+
+    const topicModal = new bootstrap.Modal(modalElement);
+    topicModal.show();
+}
+</script>
+
+<!-- Подключение Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- ЗАКРЫВАЕМ ОСНОВНОЙ КОНТЕЙНЕР -->
+</div>
+{% endblock %}
