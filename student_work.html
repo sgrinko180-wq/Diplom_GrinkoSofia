@@ -1,0 +1,913 @@
+{% extends "base.html" %}
+
+{% block title %}Моя работа{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 fade-in">
+    <!-- Заголовок -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-light mb-1">Моя научная работа</h2>
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge-custom" style="background: var(--primary-light); color: var(--primary);">
+                    {{ student.course }} курс
+                </span>
+                {% if student.topic %}
+                    <span class="badge-custom" style="background: var(--primary-light); color: var(--primary);">
+                        <i class="bi bi-check-circle-fill me-1" style="font-size: 0.65rem;"></i>
+                        Тема выбрана
+                    </span>
+                {% else %}
+                    <span class="badge-custom" style="background: #fff5f5; color: #dc3545;">
+                        <i class="bi bi-exclamation-circle-fill me-1" style="font-size: 0.65rem;"></i>
+                        Тема не выбрана
+                    </span>
+                {% endif %}
+            </div>
+        </div>
+        <a href="/" class="btn-custom-outline">
+            <i class="bi bi-arrow-left"></i>
+            <span>К списку</span>
+        </a>
+    </div>
+
+    <!-- Основная информация -->
+    <div class="row">
+        <!-- Левая колонка -->
+        <div class="col-lg-8">
+            <!-- Карточка с основной информацией -->
+            <div class="card-modern mb-4">
+                <div class="card-header-modern">
+                    <i class="bi bi-info-circle me-2"></i>
+                    Основная информация
+                </div>
+                <div class="card-body p-4">
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <div class="info-block">
+                                <div class="info-label mb-2">
+                                    <i class="bi bi-person me-1" style="color: var(--primary);"></i>
+                                    ФИО студента
+                                </div>
+                                <div class="info-content">
+                                    {{ student.full_name }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="info-block">
+                                <div class="info-label mb-2">
+                                    <i class="bi bi-journal-text me-1" style="color: var(--primary);"></i>
+                                    Тема
+                                </div>
+                                <div class="info-content">
+                                    {% if student.topic %}
+                                        <span>{{ student.topic }}</span>
+                                    {% else %}
+                                        <span class="text-secondary">Тема пока не выбрана</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="info-block">
+                                <div class="info-label mb-2">
+                                    <i class="bi bi-person-badge me-1" style="color: var(--primary);"></i>
+                                    Научный руководитель
+                                </div>
+                                <div class="info-content">
+                                    {% if advisor %}
+                                        <div class="d-flex align-items-center">
+                                            <span>{{ advisor.full_name }}</span>
+                                            {% if advisor.external_link and advisor.external_link != "#" %}
+                                                <a href="{{ advisor.external_link }}" target="_blank" class="ms-2" style="color: var(--primary);">
+                                                    <i class="bi bi-box-arrow-up-right"></i>
+                                                </a>
+                                            {% endif %}
+                                        </div>
+                                    {% else %}
+                                        <span class="text-secondary">Не назначен</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Статусы работы -->
+            <div class="card-modern mb-4">
+                <div class="card-header-modern">
+                    <i class="bi bi-check2-circle me-2"></i>
+                    Статусы работы
+                </div>
+                <div class="card-body p-4">
+                    <div class="d-flex flex-wrap gap-4">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" 
+                                   {% if student.pdf_submitted %}checked{% endif %} 
+                                   disabled
+                                   style="cursor: default;">
+                            <label class="form-check-label small {% if student.pdf_submitted %}text-success{% endif %}">
+                                <i class="bi bi-file-pdf me-1" style="color: {% if student.pdf_submitted %}var(--primary){% else %}var(--text-light){% endif %};"></i>
+                                PDF сдан
+                            </label>
+                        </div>
+
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" 
+                                   {% if student.physical_submitted %}checked{% endif %} 
+                                   disabled
+                                   style="cursor: default;">
+                            <label class="form-check-label small {% if student.physical_submitted %}text-success{% endif %}">
+                                <i class="bi bi-box me-1" style="color: {% if student.physical_submitted %}var(--primary){% else %}var(--text-light){% endif %};"></i>
+                                Бумажная версия
+                            </label>
+                        </div>
+
+                        {% if student.course == 4 %}
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" 
+                                   {% if student.plagiarism_checked %}checked{% endif %} 
+                                   disabled
+                                   style="cursor: default;">
+                            <label class="form-check-label small {% if student.plagiarism_checked %}text-success{% endif %}">
+                                <i class="bi bi-search me-1" style="color: {% if student.plagiarism_checked %}var(--primary){% else %}var(--text-light){% endif %};"></i>
+                                Плагиат проверен
+                            </label>
+                        </div>
+
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" 
+                                   {% if student.annotation_submitted %}checked{% endif %} 
+                                   disabled
+                                   style="cursor: default;">
+                            <label class="form-check-label small {% if student.annotation_submitted %}text-success{% endif %}">
+                                <i class="bi bi-file-text me-1" style="color: {% if student.annotation_submitted %}var(--primary){% else %}var(--text-light){% endif %};"></i>
+                                Аннотация сдана
+                            </label>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Мои файлы -->
+            <div class="card-modern mb-4">
+                <div class="card-header-modern">
+                    <i class="bi bi-folder me-2"></i>
+                    Мои файлы
+                </div>
+                <div class="card-body p-4">
+                    <!-- Форма загрузки -->
+                    <div class="upload-section mb-4 p-3" style="background: var(--light); border-radius: 8px;">
+                        <form id="uploadFileForm" enctype="multipart/form-data">
+                            <div class="row g-3">
+                                <div class="col-md-5">
+                                    <label class="form-label small fw-medium">Файл</label>
+                                    <input type="file"
+                                           class="form-control"
+                                           id="fileUpload"
+                                           name="file"
+                                           accept=".pdf,.zip,.rar,.7z,.tar,.gz"
+                                           required>
+                                    <small class="text-secondary">PDF, ZIP, RAR, 7Z (до 50MB)</small>
+                                </div>
+                                <div class="col-md-5">
+                                    <label class="form-label small fw-medium">Описание</label>
+                                    <input type="text"
+                                           class="form-control"
+                                           id="fileDescription"
+                                           name="description"
+                                           placeholder="Например: Диплом v1.0">
+                                </div>
+                                <div class="col-md-2 d-flex align-items-end">
+                                    <button type="submit" class="btn-custom w-100">
+                                        <i class="bi bi-upload"></i>
+                                        Загрузить
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Список файлов -->
+                    <div id="filesList" class="list-group">
+                        <!-- Файлы будут загружены через JavaScript -->
+                        <div class="text-center py-4">
+                            <div class="spinner-border" role="status" style="color: var(--primary); width: 2rem; height: 2rem;">
+                                <span class="visually-hidden">Загрузка...</span>
+                            </div>
+                            <p class="mt-2 small text-secondary">Загрузка файлов...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Правая колонка -->
+        <div class="col-lg-4">
+            <!-- Прогресс работы -->
+            <div class="card-modern mb-4">
+                <div class="card-header-modern">
+                    <i class="bi bi-graph-up me-2"></i>
+                    Прогресс работы
+                </div>
+                <div class="card-body p-4">
+                    <div class="stats-list">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-secondary">Всего встреч:</span>
+                            <span class="fw-medium">{{ meetings|length }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-secondary">Задач выполнено:</span>
+                            <span class="fw-medium">{{ completed_tasks_count }} из {{ total_tasks_count }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-3">
+                            <span class="text-secondary">Процент выполнения:</span>
+                            <span class="fw-medium">{{ completion_rate }}%</span>
+                        </div>
+
+                        {% if total_tasks_count > 0 %}
+                        <div class="progress" style="height: 6px;">
+                            <div class="progress-bar" role="progressbar"
+                                 style="width: {{ completion_rate }}%; background-color: var(--primary);"
+                                 aria-valuenow="{{ completion_rate }}"
+                                 aria-valuemin="0"
+                                 aria-valuemax="100">
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <div class="d-flex justify-content-between mt-3 pt-3 border-top">
+                            <span class="text-secondary">Рекомендаций:</span>
+                            <span class="fw-medium" id="student-teacher-files-count">0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Контакт с руководителем -->
+            {% if advisor %}
+            <div class="card-modern">
+                <div class="card-header-modern" style="background: var(--primary);">
+                    <i class="bi bi-chat-dots me-2"></i>
+                    Контакт с руководителем
+                </div>
+                <div class="card-body p-4">
+                    <p class="small text-secondary mb-2">Ваш научный руководитель:</p>
+                    <p class="fw-medium mb-3">{{ advisor.full_name }}</p>
+                    
+                    {% if advisor.external_link and advisor.external_link != "#" %}
+                    <a href="{{ advisor.external_link }}" target="_blank" class="btn-custom-outline w-100 justify-content-center">
+                        <i class="bi bi-box-arrow-up-right"></i>
+                        <span>Страница преподавателя</span>
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Рекомендации руководителя -->
+    <div class="card-modern mt-4">
+        <div class="card-header-modern" style="background: var(--primary);">
+            <i class="bi bi-book me-2"></i>
+            Рекомендации руководителя
+            <span class="badge-custom ms-2" style="background: rgba(255,255,255,0.2);" id="student-teacher-files-badge">0</span>
+        </div>
+        <div class="card-body p-4">
+            <div id="studentTeacherFilesList" class="list-group">
+                <!-- Файлы будут загружены через JavaScript -->
+                <div class="text-center py-4">
+                    <div class="spinner-border" role="status" style="color: var(--primary); width: 2rem; height: 2rem;">
+                        <span class="visually-hidden">Загрузка...</span>
+                    </div>
+                    <p class="mt-2 small text-secondary">Загрузка рекомендаций...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Созвоны и задачи -->
+    <div class="card-modern mt-4">
+        <div class="card-header-modern">
+            <i class="bi bi-telephone me-2"></i>
+            Встречи и задачи
+            <p class="small text-secondary mt-1 mb-0">Встречи назначает научный руководитель. Отмечайте выполнение задач.</p>
+        </div>
+        <div class="card-body p-4">
+            {% if meetings %}
+                {% for meeting in meetings %}
+                <div class="meeting-item mb-4 pb-4 {% if not loop.last %}border-bottom{% endif %}" id="meeting-{{ meeting.id }}">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div class="d-flex align-items-center">
+                            <div class="meeting-date me-3">
+                                <span class="meeting-day">{{ meeting.meeting_date.strftime('%d') }}</span>
+                                <span class="meeting-month">{{ meeting.meeting_date.strftime('%b') }}</span>
+                            </div>
+                            <div>
+                                <h6 class="mb-1">Встреча #{{ loop.revindex }}</h6>
+                                <span class="small text-secondary">
+                                    <i class="bi bi-clock me-1"></i>
+                                    {{ meeting.meeting_date.strftime('%H:%M') }}
+                                </span>
+                            </div>
+                        </div>
+                        <span class="badge-custom" style="background: var(--primary-light); color: var(--primary);">
+                            {{ meeting.tasks|selectattr("is_completed")|list|length }}/{{ meeting.tasks|length }} задач
+                        </span>
+                    </div>
+
+                    <!-- Заметки руководителя -->
+                    {% if meeting.notes %}
+                    <div class="mb-3 p-3" style="background: var(--light); border-radius: 8px;">
+                        <i class="bi bi-chat-text me-2" style="color: var(--primary);"></i>
+                        <span class="small fw-medium">Заметки руководителя:</span>
+                        <p class="mb-0 mt-2">{{ meeting.notes }}</p>
+                    </div>
+                    {% endif %}
+
+                    <!-- Задачи -->
+                    <h6 class="small fw-medium mb-2">Задачи к выполнению:</h6>
+                    <div class="tasks-list">
+                        {% for task in meeting.tasks %}
+                        <div class="task-item d-flex align-items-center justify-content-between mb-2 p-2" style="background: var(--light); border-radius: 6px;">
+                            <div class="d-flex align-items-center">
+                                <input type="checkbox"
+                                       class="form-check-input me-2 task-checkbox-student"
+                                       id="student-task-{{ task.id }}"
+                                       {% if task.is_completed %}checked{% endif %}
+                                       data-task-id="{{ task.id }}"
+                                       onchange="toggleStudentTask({{ task.id }})"
+                                       style="width: 1rem; height: 1rem;">
+                                <div>
+                                    <label class="form-check-label small {% if task.is_completed %}text-decoration-line-through text-secondary{% endif %}"
+                                           for="student-task-{{ task.id }}">
+                                        {{ task.description }}
+                                    </label>
+                                    {% if task.completed_at %}
+                                    <span class="small text-success ms-2">
+                                        <i class="bi bi-check-circle-fill"></i>
+                                        {{ task.completed_at.strftime('%d.%m.%Y') }}
+                                    </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <span class="badge-custom small" style="background: {% if task.is_completed %}#d4edda; color: #155724;{% else %}var(--light); color: var(--text);{% endif %}">
+                                {% if task.is_completed %}Выполнено{% else %}В работе{% endif %}
+                            </span>
+                        </div>
+                        {% else %}
+                        <div class="text-secondary small p-2">
+                            <i class="bi bi-info-circle me-1"></i> Задач для этой встречи пока нет
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="bi bi-telephone-x" style="font-size: 2.5rem; color: var(--text-light); opacity: 0.3;"></i>
+                    <p class="mt-2 text-secondary">Встреч пока нет</p>
+                    <p class="small text-secondary">Ваш научный руководитель еще не назначил встречу</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Bootstrap Icons -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+let currentStudentId = {{ student.id }};
+
+// ========== УПРАВЛЕНИЕ ЗАДАЧАМИ ==========
+async function toggleStudentTask(taskId) {
+    const checkbox = document.getElementById(`student-task-${taskId}`);
+    const taskItem = checkbox.closest('.task-item');
+    const label = taskItem.querySelector('label');
+    const badge = taskItem.querySelector('.badge-custom:last-child');
+    const isCompleted = checkbox.checked;
+
+    try {
+        const response = await fetch('/toggle-task', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                task_id: taskId,
+                is_completed: isCompleted
+            })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            if (isCompleted) {
+                label.classList.add('text-decoration-line-through', 'text-secondary');
+                badge.className = 'badge-custom small';
+                badge.style.background = '#d4edda';
+                badge.style.color = '#155724';
+                badge.textContent = 'Выполнено';
+                
+                const completedDate = new Date().toLocaleDateString('ru-RU');
+                const dateSpan = document.createElement('span');
+                dateSpan.className = 'small text-success ms-2';
+                dateSpan.innerHTML = `<i class="bi bi-check-circle-fill"></i> ${completedDate}`;
+                label.parentElement.appendChild(dateSpan);
+                
+                showNotification('Задача отмечена как выполненная!', 'success');
+            } else {
+                label.classList.remove('text-decoration-line-through', 'text-secondary');
+                badge.className = 'badge-custom small';
+                badge.style.background = 'var(--light)';
+                badge.style.color = 'var(--text)';
+                badge.textContent = 'В работе';
+                
+                const dateSpan = label.parentElement.querySelector('.text-success.ms-2');
+                if (dateSpan) dateSpan.remove();
+                
+                showNotification('Задача возобновлена', 'info');
+            }
+            updateStudentStatistics();
+        } else {
+            checkbox.checked = !isCompleted;
+            showNotification('Ошибка: ' + result.error, 'error');
+        }
+    } catch (error) {
+        console.error('Ошибка:', error);
+        checkbox.checked = !isCompleted;
+        showNotification('Ошибка при обновлении задачи', 'error');
+    }
+}
+
+async function updateStudentStatistics() {
+    try {
+        const response = await fetch(`/get-student-statistics/${currentStudentId}`);
+        const stats = await response.json();
+
+        if (stats.success) {
+            document.querySelectorAll('.stats-list .d-flex').forEach(el => {
+                const label = el.querySelector('.text-secondary');
+                if (label && label.textContent.includes('Всего созвонов:')) {
+                    el.querySelector('.fw-medium').textContent = stats.meetings_count;
+                }
+                if (label && label.textContent.includes('Задач выполнено:')) {
+                    el.querySelector('.fw-medium').innerHTML = `${stats.completed_tasks} из ${stats.total_tasks}`;
+                }
+                if (label && label.textContent.includes('Процент выполнения:')) {
+                    el.querySelector('.fw-medium').textContent = `${stats.completion_rate}%`;
+                }
+            });
+
+            const progressBar = document.querySelector('.progress-bar');
+            if (progressBar) {
+                progressBar.style.width = `${stats.completion_rate}%`;
+                progressBar.setAttribute('aria-valuenow', stats.completion_rate);
+            }
+
+            document.querySelectorAll('.badge-custom').forEach(badge => {
+                const meetingItem = badge.closest('.meeting-item');
+                if (meetingItem) {
+                    const completed = meetingItem.querySelectorAll('.task-checkbox-student:checked').length;
+                    const total = meetingItem.querySelectorAll('.task-checkbox-student').length;
+                    badge.textContent = `${completed}/${total} задач`;
+                }
+            });
+        }
+    } catch (error) {
+        console.error('Ошибка при обновлении статистики:', error);
+    }
+}
+
+// ========== РАБОТА С ФАЙЛАМИ ==========
+async function loadStudentFiles() {
+    const filesList = document.getElementById('filesList');
+
+    try {
+        const response = await fetch(`/get-student-files/${currentStudentId}`);
+        const data = await response.json();
+
+        if (data.success) {
+            displayStudentFiles(data.files);
+        } else {
+            throw new Error(data.error || 'Ошибка загрузки');
+        }
+    } catch (error) {
+        console.error('Ошибка загрузки файлов:', error);
+        filesList.innerHTML = `
+            <div class="alert alert-danger small">
+                <i class="bi bi-exclamation-triangle me-1"></i> Ошибка при загрузке файлов
+            </div>
+        `;
+    }
+}
+
+function displayStudentFiles(files) {
+    const filesList = document.getElementById('filesList');
+
+    if (files.length === 0) {
+        filesList.innerHTML = `
+            <div class="text-center py-4 text-secondary">
+                <i class="bi bi-folder2-open" style="font-size: 2rem; opacity: 0.3;"></i>
+                <p class="mt-2 mb-0 small">Нет загруженных файлов</p>
+                <small class="text-secondary">Загрузите PDF или архив с материалами</small>
+            </div>
+        `;
+        return;
+    }
+
+    let html = '';
+    files.forEach(file => {
+        const fileIcon = file.file_type === 'pdf' ? 'bi-file-earmark-pdf' : 'bi-file-earmark-zip';
+        const fileColor = file.file_type === 'pdf' ? '#dc3545' : '#ffc107';
+
+        html += `
+            <div class="list-group-item border-0 border-bottom px-0" style="border-color: var(--border) !important;" id="file-${file.id}">
+                <div class="d-flex align-items-start">
+                    <i class="bi ${fileIcon} me-3" style="font-size: 1.5rem; color: ${fileColor};"></i>
+                    <div class="flex-grow-1">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <span class="small fw-medium">${escapeHtml(file.original_filename)}</span>
+                                <div class="d-flex gap-2 mt-1">
+                                    <span class="small text-secondary">${file.file_size_formatted || formatFileSize(file.file_size)}</span>
+                                    <span class="small text-secondary">•</span>
+                                    <span class="small text-secondary">${file.created_at || ''}</span>
+                                </div>
+                                ${file.description ? `
+                                <div class="small p-2 rounded mt-2" style="background: var(--light);">
+                                    <i class="bi bi-info-circle me-1" style="color: var(--primary);"></i>
+                                    ${escapeHtml(file.description)}
+                                </div>
+                                ` : ''}
+                                ${file.teacher_note ? `
+                                <div class="small p-2 rounded mt-2" style="background: var(--primary-light);">
+                                    <i class="bi bi-chat-quote me-1" style="color: var(--primary);"></i>
+                                    <span class="fw-medium">Заметка преподавателя:</span>
+                                    <p class="mb-0 mt-1">${escapeHtml(file.teacher_note)}</p>
+                                </div>
+                                ` : ''}
+                            </div>
+                            <div class="d-flex gap-2">
+                                <button onclick="downloadStudentFile(${file.id})" class="btn-custom-outline" style="padding: 0.25rem 0.75rem;">
+                                    <i class="bi bi-download"></i>
+                                </button>
+                                <button onclick="deleteStudentFile(${file.id})" class="btn-custom-outline" style="padding: 0.25rem 0.75rem; color: #dc3545;">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+
+    filesList.innerHTML = html;
+}
+
+// ========== ЗАГРУЗКА ФАЙЛА ==========
+document.getElementById('uploadFileForm')?.addEventListener('submit', async function(e) {
+    e.preventDefault();
+
+    const formData = new FormData();
+    const fileInput = document.getElementById('fileUpload');
+    const description = document.getElementById('fileDescription').value;
+
+    if (!fileInput.files[0]) {
+        showNotification('Выберите файл', 'warning');
+        return;
+    }
+
+    if (fileInput.files[0].size > 50 * 1024 * 1024) {
+        showNotification('Файл слишком большой (макс. 50MB)', 'warning');
+        return;
+    }
+
+    formData.append('file', fileInput.files[0]);
+    formData.append('description', description);
+
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span>';
+    submitBtn.disabled = true;
+
+    try {
+        const response = await fetch('/upload-student-file', {
+            method: 'POST',
+            body: formData
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            showNotification('Файл загружен', 'success');
+            document.getElementById('uploadFileForm').reset();
+            loadStudentFiles();
+        } else {
+            showNotification('Ошибка: ' + result.error, 'error');
+        }
+    } catch (error) {
+        console.error('Ошибка:', error);
+        showNotification('Ошибка при загрузке', 'error');
+    } finally {
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    }
+});
+
+// ========== РАБОТА С РЕКОМЕНДАЦИЯМИ ==========
+async function loadTeacherRecommendations() {
+    const filesList = document.getElementById('studentTeacherFilesList');
+    const filesCount = document.getElementById('student-teacher-files-count');
+    const filesBadge = document.getElementById('student-teacher-files-badge');
+
+    try {
+        const response = await fetch(`/get-teacher-files/${currentStudentId}`);
+        const data = await response.json();
+
+        if (data.success) {
+            if (data.files.length > 0) {
+                displayTeacherRecommendations(data.files);
+                if (filesCount) filesCount.textContent = data.files.length;
+                if (filesBadge) {
+                    filesBadge.textContent = data.files.length;
+                    filesBadge.style.background = 'rgba(255,255,255,0.2)';
+                }
+            } else {
+                filesList.innerHTML = `
+                    <div class="text-center py-4 text-secondary">
+                        <i class="bi bi-folder2-open" style="font-size: 2rem; opacity: 0.3;"></i>
+                        <p class="mt-2 mb-0 small">Нет рекомендаций от руководителя</p>
+                        <small class="text-secondary">Методические материалы появятся здесь</small>
+                    </div>
+                `;
+                if (filesCount) filesCount.textContent = '0';
+                if (filesBadge) {
+                    filesBadge.textContent = '0';
+                    filesBadge.style.background = 'rgba(255,255,255,0.2)';
+                }
+            }
+        }
+    } catch (error) {
+        console.error('Ошибка загрузки рекомендаций:', error);
+        if (filesList) {
+            filesList.innerHTML = `
+                <div class="alert alert-danger small">
+                    <i class="bi bi-exclamation-triangle me-1"></i> Ошибка при загрузке рекомендаций
+                </div>
+            `;
+        }
+    }
+}
+
+function displayTeacherRecommendations(files) {
+    const filesList = document.getElementById('studentTeacherFilesList');
+    let html = '';
+
+    files.forEach(file => {
+        const fileIcon = file.file_type === 'pdf' ? 'bi-file-earmark-pdf' :
+                        file.file_type === 'document' ? 'bi-file-earmark-word' :
+                        'bi-file-earmark-text';
+        const fileColor = file.file_type === 'pdf' ? '#dc3545' :
+                         file.file_type === 'document' ? 'var(--primary)' :
+                         'var(--text-light)';
+
+        html += `
+            <div class="list-group-item border-0 border-bottom px-0" style="border-color: var(--border) !important;">
+                <div class="d-flex align-items-start">
+                    <i class="bi ${fileIcon} me-3" style="font-size: 1.5rem; color: ${fileColor};"></i>
+                    <div class="flex-grow-1">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <span class="small fw-medium">${escapeHtml(file.original_filename)}</span>
+                                <div class="d-flex gap-2 mt-1">
+                                    <span class="small text-secondary">${file.teacher_name}</span>
+                                    <span class="small text-secondary">•</span>
+                                    <span class="small text-secondary">${file.created_at || ''}</span>
+                                </div>
+                                ${file.description ? `
+                                <div class="small p-2 rounded mt-2" style="background: var(--light);">
+                                    ${escapeHtml(file.description)}
+                                </div>
+                                ` : ''}
+                            </div>
+                            <button onclick="downloadTeacherFile(${file.id})" class="btn-custom-outline" style="padding: 0.25rem 0.75rem;">
+                                <i class="bi bi-download"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+
+    filesList.innerHTML = html;
+}
+
+// ========== СКАЧИВАНИЕ ==========
+async function downloadStudentFile(fileId) {
+    window.location.href = `/download-student-file/${fileId}`;
+}
+
+async function downloadTeacherFile(fileId) {
+    window.location.href = `/download-teacher-file/${fileId}`;
+}
+
+// ========== УДАЛЕНИЕ ==========
+async function deleteStudentFile(fileId) {
+    if (!confirm('Удалить этот файл?')) return;
+
+    try {
+        const response = await fetch(`/delete-student-file/${fileId}`, {
+            method: 'DELETE'
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            showNotification('Файл удален', 'info');
+            loadStudentFiles();
+        } else {
+            showNotification('Ошибка: ' + result.error, 'error');
+        }
+    } catch (error) {
+        console.error('Ошибка:', error);
+        showNotification('Ошибка при удалении', 'error');
+    }
+}
+
+// ========== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ==========
+function formatFileSize(bytes) {
+    if (!bytes || bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function showNotification(message, type = 'info') {
+    const alertClass = type === 'success' ? 'alert-success' :
+                      type === 'warning' ? 'alert-warning' :
+                      type === 'error' ? 'alert-danger' : 'alert-info';
+
+    const notification = document.createElement('div');
+    notification.className = `alert ${alertClass} alert-dismissible fade show`;
+    notification.style.position = 'fixed';
+    notification.style.top = '20px';
+    notification.style.right = '20px';
+    notification.style.zIndex = '9999';
+    notification.style.minWidth = '300px';
+    notification.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+
+    notification.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+
+    document.body.appendChild(notification);
+    setTimeout(() => notification.remove(), 3000);
+}
+
+// ========== ИНИЦИАЛИЗАЦИЯ ==========
+document.addEventListener('DOMContentLoaded', function() {
+    loadStudentFiles();
+    loadTeacherRecommendations();
+});
+</script>
+
+<style>
+/* Дополнительные стили */
+.info-block {
+    padding: 0.5rem 0;
+}
+
+.info-label {
+    font-size: 0.8rem;
+    color: var(--text-light);
+}
+
+.info-content {
+    font-size: 0.95rem;
+}
+
+/* Дата созвона */
+.meeting-date {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    background: var(--primary-light);
+    border-radius: 8px;
+    color: var(--primary);
+    line-height: 1.2;
+}
+
+.meeting-day {
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.meeting-month {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+}
+
+/* Чекбоксы */
+.form-check-input {
+    width: 1rem;
+    height: 1rem;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    background-color: white;
+    transition: all 0.2s ease;
+}
+
+.form-check-input:checked {
+    background-color: var(--primary);
+    border-color: var(--primary);
+}
+
+.form-check-input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 0.2rem rgba(65, 196, 67, 0.25);
+}
+
+.form-check-input:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+/* Прогресс-бар */
+.progress {
+    background-color: var(--light);
+    border-radius: 4px;
+}
+
+.progress-bar {
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+
+/* Анимации */
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+.alert {
+    animation: slideIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.fade-in {
+    animation: fadeIn 0.3s ease-out;
+}
+
+.task-checkbox-student:checked {
+    background-color: var(--primary);
+    border-color: var(--primary);
+}
+
+/* Списки */
+.list-group-item {
+    transition: background-color 0.2s ease;
+}
+
+.list-group-item:hover {
+    background-color: var(--light);
+}
+</style>
+{% endblock %}

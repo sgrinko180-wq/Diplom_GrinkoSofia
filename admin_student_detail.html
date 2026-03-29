@@ -1,0 +1,883 @@
+{% extends "base.html" %}
+
+{% block title %}Студент: {{ student.full_name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <!-- Заголовок -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <h2 class="fw-light mb-1">{{ student.full_name }}</h2>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge bg-dark">Администратор</span>
+                        <span class="small text-secondary">{{ student.course }} курс</span>
+                    </div>
+                </div>
+                <div>
+                    <a href="/my-students" class="btn btn-sm btn-outline-secondary">
+                        ← Назад к списку
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Основная информация -->
+    <div class="row">
+        <!-- Левая колонка - информация о студенте -->
+        <div class="col-lg-8">
+            <!-- Карточка с основной информацией -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body">
+                    <h5 class="fw-light mb-3">Основная информация</h5>
+
+                    <!-- Информационные строки в стиле "ключ-значение" -->
+                    <div class="d-flex flex-column gap-2">
+                        <div class="d-flex">
+                            <div class="info-label">Курс:</div>
+                            <div class="info-value">{{ student.course }}</div>
+                        </div>
+
+                        <div class="d-flex align-items-start">
+                            <div class="info-label">Тема диплома:</div>
+                            <div class="info-value d-flex align-items-center flex-wrap">
+                                <!-- Режим просмотра темы -->
+                                <span id="topic-text-{{ student.id }}"
+                                      class="topic-text {% if not student.topic %}text-danger{% endif %}"
+                                      onclick="showFullTopic('{% if not student.topic %}Тема не выбрана{% else %}{{ student.topic|escape }}{% endif %}')">
+                                    {% if student.topic %}
+                                        {{ student.topic }}
+                                    {% else %}
+                                        Тема не выбрана
+                                    {% endif %}
+                                </span>
+
+                                <!-- Кнопка редактирования для администратора -->
+                                <button type="button"
+                                        class="btn btn-sm btn-outline-secondary ms-2 edit-topic-btn"
+                                        data-student-id="{{ student.id }}"
+                                        title="Редактировать тему">
+                                    Ред.
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="d-flex">
+                            <div class="info-label">Научный руководитель:</div>
+                            <div class="info-value">
+                                {% if advisor %}
+                                    <div class="d-flex align-items-center">
+                                        <span class="fw-medium">{{ advisor.full_name }}</span>
+                                        {% if advisor.external_link and advisor.external_link != "#" %}
+                                            <a href="{{ advisor.external_link }}" target="_blank" class="text-secondary text-decoration-none ms-2 small">↗</a>
+                                        {% endif %}
+                                    </div>
+                                {% else %}
+                                    <span class="text-secondary">Не назначен</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Статусы работы -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body">
+                    <h5 class="fw-light mb-3">Статусы работы</h5>
+                    <div class="d-flex flex-wrap gap-4">
+                        <!-- PDF сдан -->
+                        <div class="form-check form-switch">
+                            <input class="form-check-input status-switch-admin" type="checkbox"
+                                   id="pdf-status-{{ student.id }}"
+                                   {% if student.pdf_submitted %}checked{% endif %}
+                                   data-student-id="{{ student.id }}"
+                                   data-field="pdf_submitted">
+                            <label class="form-check-label small {% if student.pdf_submitted %}text-success{% endif %}"
+                                   for="pdf-status-{{ student.id }}">
+                                 PDF сдан
+                            </label>
+                        </div>
+
+                        <!-- Бумажная версия -->
+                        <div class="form-check form-switch">
+                            <input class="form-check-input status-switch-admin" type="checkbox"
+                                   id="physical-status-{{ student.id }}"
+                                   {% if student.physical_submitted %}checked{% endif %}
+                                   data-student-id="{{ student.id }}"
+                                   data-field="physical_submitted">
+                            <label class="form-check-label small {% if student.physical_submitted %}text-success{% endif %}"
+                                   for="physical-status-{{ student.id }}">
+                                 Бумажная версия
+                            </label>
+                        </div>
+
+                        <!-- Проверка на плагиат -->
+                        <div class="form-check form-switch">
+                            {% if student.course == 4 %}
+                                <input class="form-check-input status-switch-admin" type="checkbox"
+                                       id="plagiarism-status-{{ student.id }}"
+                                       {% if student.plagiarism_checked %}checked{% endif %}
+                                       data-student-id="{{ student.id }}"
+                                       data-field="plagiarism_checked">
+                                <label class="form-check-label small {% if student.plagiarism_checked %}text-success{% endif %}"
+                                       for="plagiarism-status-{{ student.id }}">
+                                    🔍 Плагиат проверен
+                                </label>
+                            {% else %}
+                                <input class="form-check-input" type="checkbox"
+                                       id="plagiarism-status-disabled-{{ student.id }}"
+                                       {% if student.plagiarism_checked %}checked{% endif %}
+                                       disabled
+                                       style="opacity: 0.5;">
+                                <label class="form-check-label small text-secondary"
+                                       for="plagiarism-status-disabled-{{ student.id }}">
+                                    🔍 Плагиат проверен
+                                    <span class="badge bg-light text-dark ms-1 small">4 курс</span>
+                                </label>
+                            {% endif %}
+                        </div>
+
+                        <!-- Аннотация -->
+                        <div class="form-check form-switch">
+                            {% if student.course == 4 %}
+                                <input class="form-check-input status-switch-admin" type="checkbox"
+                                       id="annotation-status-{{ student.id }}"
+                                       {% if student.annotation_submitted %}checked{% endif %}
+                                       data-student-id="{{ student.id }}"
+                                       data-field="annotation_submitted">
+                                <label class="form-check-label small {% if student.annotation_submitted %}text-success{% endif %}"
+                                       for="annotation-status-{{ student.id }}">
+                                    Аннотация сдана
+                                </label>
+                            {% else %}
+                                <input class="form-check-input" type="checkbox"
+                                       id="annotation-status-disabled-{{ student.id }}"
+                                       {% if student.annotation_submitted %}checked{% endif %}
+                                       disabled
+                                       style="opacity: 0.5;">
+                                <label class="form-check-label small text-secondary"
+                                       for="annotation-status-disabled-{{ student.id }}">
+                                    Аннотация сдана
+                                    <span class="badge bg-light text-dark ms-1 small">4 курс</span>
+                                </label>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% if student.course < 4 %}
+                    <div class="small text-secondary mt-3 pt-2 border-top">
+                        <span class="text-danger">*</span> Статусы "Плагиат" и "Аннотация" доступны только для 4 курса
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Файлы студента -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-transparent border-0 pt-3 px-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="fw-light mb-0">📁 Файлы студента</h5>
+                        <span class="badge bg-secondary" id="admin-files-count-badge">0</span>
+                    </div>
+                </div>
+                <div class="card-body pt-0">
+                    <!-- Индикатор загрузки -->
+                    <div id="admin-files-loading" class="text-center py-4">
+                        <div class="spinner-border text-secondary" role="status" style="width: 2rem; height: 2rem;">
+                            <span class="visually-hidden">Загрузка...</span>
+                        </div>
+                        <p class="mt-2 small text-secondary">Загрузка файлов...</p>
+                    </div>
+
+                    <!-- Список файлов -->
+                    <div id="adminStudentFilesList" class="list-group" style="display: none;"></div>
+
+                    <!-- Сообщение об ошибке -->
+                    <div id="admin-files-error" class="alert alert-danger small" style="display: none;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Правая колонка - статистика и действия -->
+        <div class="col-lg-4">
+            <!-- Блок действий -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body">
+                    <h5 class="fw-light mb-3">Действия</h5>
+                    <div class="d-grid gap-2">
+                        {% if advisor %}
+                        <a href="/teacher/student/{{ student.id }}" class="btn btn-outline-secondary btn-sm" target="_blank">
+                            Посмотреть как преподаватель
+                        </a>
+                        {% endif %}
+                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="window.print()">
+                            Экспорт карточки
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Статистика -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body">
+                    <h5 class="fw-light mb-3">Статистика</h5>
+                    <div class="small">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-secondary">Всего встреч:</span>
+                            <span class="fw-medium">{{ meetings|length }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-secondary">Задач выполнено:</span>
+                            <span class="fw-medium">{{ completed_tasks_count }} из {{ total_tasks_count }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-3">
+                            <span class="text-secondary">Процент выполнения:</span>
+                            <span class="fw-medium">{{ completion_rate }}%</span>
+                        </div>
+
+                        <!-- Прогресс-бар -->
+                        {% if total_tasks_count > 0 %}
+                        <div class="progress" style="height: 6px;">
+                            <div class="progress-bar bg-success"
+                                 role="progressbar"
+                                 style="width: {{ completion_rate }}%"
+                                 aria-valuenow="{{ completion_rate }}"
+                                 aria-valuemin="0"
+                                 aria-valuemax="100">
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+<!--            &lt;!&ndash; Режим просмотра &ndash;&gt;-->
+<!--            <div class="card border-0 shadow-sm">-->
+<!--                <div class="card-body">-->
+<!--                    <h5 class="fw-light mb-3">Режим просмотра</h5>-->
+<!--                    <div class="small">-->
+<!--                        <p class="text-secondary mb-2">Администратор может:</p>-->
+<!--                        <ul class="list-unstyled text-secondary">-->
+<!--                            <li class="mb-1">✓ Просматривать все данные</li>-->
+<!--                            <li class="mb-1">✓ Видеть статистику</li>-->
+<!--                            <li class="mb-1">✓ Скачивать файлы</li>-->
+<!--                            <li class="mb-1">✓ Изменять статусы работы</li>-->
+<!--                            <li class="mb-1">✓ Редактировать тему диплома</li>-->
+<!--                        </ul>-->
+<!--                        <p class="text-secondary mt-3 mb-2">Администратор не может:</p>-->
+<!--                        <ul class="list-unstyled text-secondary">-->
+<!--                            <li class="mb-1">✗ Добавлять встречу</li>-->
+<!--                            <li class="mb-1">✗ Изменять задачи</li>-->
+<!--                            <li class="mb-1">✗ Добавлять заметки</li>-->
+<!--                        </ul>-->
+<!--                    </div>-->
+<!--                </div>-->
+<!--            </div>-->
+<!--        </div>-->
+<!--    </div>-->
+
+    <!-- Созвоны и задачи -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-transparent border-0 pt-3 px-3">
+                    <h5 class="fw-light mb-0">Встречи и задачи</h5>
+                    <p class="small text-secondary mb-0 mt-1">Только просмотр (режим администратора)</p>
+                </div>
+                <div class="card-body">
+                    {% if meetings %}
+                        {% for meeting in meetings %}
+                        <div class="border-bottom pb-3 mb-3 {% if loop.last %}border-bottom-0 pb-0 mb-0{% endif %}">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <div>
+                                    <span class="fw-medium">Встреча #{{ loop.revindex }}</span>
+                                    <span class="small text-secondary ms-3">
+                                         {{ meeting.meeting_date.strftime('%d.%m.%Y %H:%M') }}
+                                    </span>
+                                </div>
+                                <span class="badge bg-light text-dark small">
+                                    {{ meeting.tasks|selectattr("is_completed")|list|length }}/{{ meeting.tasks|length }} задач
+                                </span>
+                            </div>
+
+                            {% if meeting.notes %}
+                            <div class="small bg-light p-2 rounded mb-2">
+                                <span class="text-secondary"> Заметки:</span>
+                                <p class="mb-0 mt-1">{{ meeting.notes }}</p>
+                            </div>
+                            {% endif %}
+
+                            {% if meeting.tasks %}
+                            <div class="small">
+                                {% for task in meeting.tasks %}
+                                <div class="d-flex align-items-start mb-1">
+                                    <input type="checkbox"
+                                           class="form-check-input me-2"
+                                           {% if task.is_completed %}checked{% endif %}
+                                           disabled
+                                           style="width: 1rem; height: 1rem; margin-top: 0.15rem;">
+                                    <div>
+                                        <span class="{% if task.is_completed %}text-decoration-line-through text-secondary{% endif %}">
+                                            {{ task.description }}
+                                        </span>
+                                        {% if task.completed_at %}
+                                        <span class="text-success small ms-2">
+                                            ✓ {{ task.completed_at.strftime('%d.%m.%Y') }}
+                                        </span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-4">
+                            <span class="text-secondary">Встреч пока нет</span>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для полной темы -->
+<div class="modal fade" id="topicModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content border-0 shadow-sm">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h6 class="modal-title fw-normal">Тема работы</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p id="fullTopicText" class="mb-0" style="white-space: pre-wrap; word-break: break-word;"></p>
+            </div>
+            <div class="modal-footer border-top-0 pt-0">
+                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно редактирования темы -->
+<div class="modal fade" id="editTopicModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content border-0 shadow-sm">
+            <div class="modal-header border-bottom-0">
+                <h6 class="modal-title fw-normal">Редактирование темы</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label small text-secondary">Тема диплома</label>
+                    <textarea class="form-control" id="editTopicInput" rows="3"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer border-top-0">
+                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-sm btn-success" id="saveTopicBtn">Сохранить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bootstrap Icons -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+// Глобальные переменные
+const studentId = {{ student.id }};
+const studentCourse = {{ student.course }};
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Загружаем файлы
+    loadAdminStudentFiles();
+
+    // Инициализация обработчиков
+    initTopicEditing();
+    initStatusSwitches();
+});
+
+// ========== РАБОТА С ТЕМОЙ ==========
+function showFullTopic(topicText) {
+    document.getElementById('fullTopicText').textContent = topicText;
+    new bootstrap.Modal(document.getElementById('topicModal')).show();
+}
+
+function initTopicEditing() {
+    const editBtn = document.querySelector('.edit-topic-btn');
+    if (!editBtn) return;
+
+    const editModal = new bootstrap.Modal(document.getElementById('editTopicModal'));
+    const saveBtn = document.getElementById('saveTopicBtn');
+    const input = document.getElementById('editTopicInput');
+
+    editBtn.addEventListener('click', function() {
+        const currentTopic = document.getElementById('topic-text-{{ student.id }}').textContent;
+        input.value = currentTopic !== 'Тема не выбрана' ? currentTopic : '';
+        editModal.show();
+    });
+
+    saveBtn.addEventListener('click', async function() {
+        const newTopic = input.value.trim();
+
+        if (!newTopic) {
+            showNotification('Тема не может быть пустой', 'warning');
+            return;
+        }
+
+        try {
+            const response = await fetch('/update-student-topic', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    student_id: studentId,
+                    topic: newTopic
+                })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                const topicElement = document.getElementById('topic-text-{{ student.id }}');
+                topicElement.textContent = newTopic;
+                topicElement.classList.remove('text-danger');
+                editModal.hide();
+                showNotification('Тема успешно обновлена', 'success');
+            } else {
+                showNotification('Ошибка: ' + result.error, 'error');
+            }
+        } catch (error) {
+            console.error('Ошибка:', error);
+            showNotification('Ошибка при сохранении', 'error');
+        }
+    });
+}
+
+// ========== СТАТУСЫ ==========
+function initStatusSwitches() {
+    document.querySelectorAll('.status-switch-admin').forEach(checkbox => {
+        checkbox.addEventListener('change', async function() {
+            const field = this.dataset.field;
+            const value = this.checked;
+            const studentId = this.dataset.studentId;
+
+            // Проверка для 4 курса
+            if (studentCourse < 4 && (field === 'plagiarism_checked' || field === 'annotation_submitted')) {
+                this.checked = !this.checked;
+                showNotification('Этот статус доступен только для 4 курса', 'warning');
+                return;
+            }
+
+            try {
+                const response = await fetch('/update-student-status', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        student_id: parseInt(studentId),
+                        [field]: value
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    const label = this.nextElementSibling;
+                    if (value) {
+                        label.classList.add('text-success');
+                    } else {
+                        label.classList.remove('text-success');
+                    }
+                    showNotification('Статус обновлен', 'success');
+                } else {
+                    this.checked = !this.checked;
+                    showNotification('Ошибка: ' + result.error, 'error');
+                }
+            } catch (error) {
+                console.error('Ошибка:', error);
+                this.checked = !this.checked;
+                showNotification('Ошибка при обновлении', 'error');
+            }
+        });
+    });
+}
+
+// ========== ФАЙЛЫ ==========
+async function loadAdminStudentFiles() {
+    const filesList = document.getElementById('adminStudentFilesList');
+    const loadingEl = document.getElementById('admin-files-loading');
+    const errorEl = document.getElementById('admin-files-error');
+    const countBadge = document.getElementById('admin-files-count-badge');
+
+    try {
+        const response = await fetch(`/get-student-files/${studentId}`);
+        const data = await response.json();
+
+        loadingEl.style.display = 'none';
+
+        if (data.success) {
+            if (data.files && data.files.length > 0) {
+                filesList.style.display = 'block';
+                errorEl.style.display = 'none';
+                displayAdminFiles(data.files);
+                countBadge.textContent = data.files.length;
+            } else {
+                filesList.style.display = 'block';
+                errorEl.style.display = 'none';
+                filesList.innerHTML = `
+                    <div class="text-center py-4 text-secondary">
+                        <i class="bi bi-file-earmark" style="font-size: 2rem; opacity: 0.3;"></i>
+                        <p class="mt-2 mb-0 small">Файлы не загружены</p>
+                    </div>
+                `;
+                countBadge.textContent = '0';
+            }
+        } else {
+            throw new Error(data.error || 'Ошибка загрузки');
+        }
+    } catch (error) {
+        console.error('Ошибка:', error);
+        loadingEl.style.display = 'none';
+        errorEl.style.display = 'block';
+        errorEl.innerHTML = `<i class="bi bi-exclamation-triangle me-1"></i> ${error.message}`;
+        countBadge.textContent = '!';
+    }
+}
+
+function displayAdminFiles(files) {
+    const filesList = document.getElementById('adminStudentFilesList');
+    let html = '';
+
+    files.forEach(file => {
+        const fileIcon = file.file_type === 'pdf' ? 'bi-file-earmark-pdf text-danger' :
+                        file.file_type === 'archive' ? 'bi-file-earmark-zip text-warning' :
+                        'bi-file-earmark text-primary';
+
+        html += `
+            <div class="list-group-item border-0 border-bottom px-0">
+                <div class="d-flex align-items-start">
+                    <i class="bi ${fileIcon} me-3" style="font-size: 1.5rem;"></i>
+                    <div class="flex-grow-1">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <span class="small fw-medium">${escapeHtml(file.original_filename)}</span>
+                                <div class="d-flex gap-2 mt-1">
+                                    <span class="small text-secondary">${file.file_size_formatted || formatFileSize(file.file_size)}</span>
+                                    <span class="small text-secondary">•</span>
+                                    <span class="small text-secondary">${file.created_at || ''}</span>
+                                </div>
+                                ${file.teacher_note ? `
+                                <div class="small text-secondary bg-light p-2 rounded mt-2">
+                                    <i class="bi bi-chat-quote me-1"></i>${escapeHtml(file.teacher_note)}
+                                </div>
+                                ` : ''}
+                            </div>
+                            <button onclick="downloadFile(${file.id})" class="btn btn-sm btn-outline-secondary">
+                                <i class="bi bi-download"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+
+    filesList.innerHTML = html;
+}
+
+// ========== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ==========
+function formatFileSize(bytes) {
+    if (!bytes || bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+async function downloadFile(fileId) {
+    try {
+        window.location.href = `/download-file/${fileId}`;
+    } catch (error) {
+        console.error('Ошибка:', error);
+        showNotification('Ошибка при скачивании', 'error');
+    }
+}
+
+function showNotification(message, type = 'info') {
+    const alertClass = type === 'success' ? 'alert-success' :
+                      type === 'warning' ? 'alert-warning' :
+                      type === 'error' ? 'alert-danger' : 'alert-info';
+
+    const notification = document.createElement('div');
+    notification.className = `alert ${alertClass} alert-dismissible fade show`;
+    notification.style.position = 'fixed';
+    notification.style.top = '20px';
+    notification.style.right = '20px';
+    notification.style.zIndex = '9999';
+    notification.style.minWidth = '300px';
+    notification.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+
+    notification.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+
+    document.body.appendChild(notification);
+    setTimeout(() => notification.remove(), 3000);
+}
+</script>
+
+<style>
+/* ========== ОСНОВНЫЕ СТИЛИ ========== */
+.container-fluid {
+    padding: 1.5rem;
+}
+
+h2 {
+    font-size: 1.5rem;
+    font-weight: 300;
+    color: #212529;
+    margin-bottom: 0.25rem;
+}
+
+/* ========== КАРТОЧКИ ========== */
+.card {
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.card-header {
+    background-color: white;
+    padding: 1.25rem 1.25rem 0.5rem;
+}
+
+.card-body {
+    padding: 1.25rem;
+}
+
+/* ========== ИНФОРМАЦИОННЫЕ СТРОКИ ========== */
+.info-label {
+    min-width: 150px;
+    color: #6c757d;
+    font-weight: 400;
+    font-size: 0.9rem;
+}
+
+.info-value {
+    color: #212529;
+    font-weight: 500;
+    font-size: 0.9rem;
+    flex: 1;
+}
+
+/* ========== ФОРМЫ ========== */
+.form-check-input {
+    width: 2.5rem;
+    height: 1.25rem;
+    cursor: pointer;
+    border-radius: 2rem;
+    border: 1px solid #ced4da;
+    transition: all 0.2s ease;
+    margin-right: 0.5rem;
+}
+
+.form-check-input:checked {
+    background-color: #28a745;
+    border-color: #28a745;
+}
+
+.form-check-input:focus {
+    box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+    border-color: #28a745;
+}
+
+.form-check-input:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* ========== ТЕМА ========== */
+.topic-text {
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+
+.topic-text:hover {
+    color: #0066cc !important;
+    text-decoration: underline;
+}
+
+/* ========== БЕЙДЖИ ========== */
+.badge {
+    font-weight: 400;
+    padding: 0.35rem 0.65rem;
+    border-radius: 6px;
+    font-size: 0.7rem;
+}
+
+.badge.bg-dark {
+    background-color: #212529 !important;
+}
+
+.badge.bg-light {
+    background-color: #f8f9fa !important;
+    color: #212529;
+}
+
+/* ========== КНОПКИ ========== */
+.btn-sm {
+    padding: 0.25rem 0.75rem;
+    font-size: 0.75rem;
+    border-radius: 6px;
+}
+
+.btn-outline-secondary {
+    color: #6c757d;
+    border-color: #dee2e6;
+    background: white;
+    transition: all 0.2s ease;
+}
+
+.btn-outline-secondary:hover {
+    background-color: #f8f9fa;
+    border-color: #ced4da;
+    color: #212529;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+/* ========== ТЕКСТ ========== */
+.text-secondary {
+    color: #6c757d !important;
+}
+
+.text-success {
+    color: #28a745 !important;
+}
+
+.fw-light {
+    font-weight: 300;
+}
+
+.fw-medium {
+    font-weight: 500;
+}
+
+.small {
+    font-size: 0.75rem;
+}
+
+/* ========== СПИСОК ФАЙЛОВ ========== */
+.list-group-item {
+    border-left: none;
+    border-right: none;
+    padding: 1rem 0;
+    transition: background-color 0.2s ease;
+}
+
+.list-group-item:first-child {
+    border-top: none;
+}
+
+.list-group-item:last-child {
+    border-bottom: none;
+}
+
+.list-group-item:hover {
+    background-color: #f8f9fa;
+}
+
+/* ========== ПРОГРЕСС-БАР ========== */
+.progress {
+    background-color: #f0f0f0;
+    border-radius: 4px;
+}
+
+.progress-bar {
+    background-color: #28a745;
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+
+/* ========== УВЕДОМЛЕНИЯ ========== */
+.alert {
+    border: none;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+.alert {
+    animation: slideIn 0.3s ease-out;
+}
+
+/* ========== СПИННЕР ========== */
+.spinner-border {
+    color: #6c757d;
+}
+
+/* ========== МОДАЛЬНЫЕ ОКНА ========== */
+.modal-content {
+    border-radius: 12px;
+}
+
+.modal-header {
+    padding: 1.25rem 1.5rem;
+}
+
+.modal-body {
+    padding: 1.5rem;
+}
+
+.modal-footer {
+    padding: 1rem 1.5rem;
+}
+
+/* ========== АДАПТИВНОСТЬ ========== */
+@media (max-width: 768px) {
+    .container-fluid {
+        padding: 1rem;
+    }
+
+    h2 {
+        font-size: 1.25rem;
+    }
+
+    .d-flex.gap-4 {
+        gap: 1rem !important;
+        flex-wrap: wrap;
+    }
+
+    .form-check {
+        margin-bottom: 0.5rem;
+    }
+
+    .info-label {
+        min-width: 120px;
+    }
+}
+</style>
+{% endblock %}

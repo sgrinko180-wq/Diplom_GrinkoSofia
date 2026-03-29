@@ -1,0 +1,1177 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Дипломные работы{% endblock %}</title>
+
+    <!-- Bootstrap 5 CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+
+    <style>
+        :root {
+            --primary: #41c443;
+            --primary-dark: #369b36;
+            --primary-light: #e8f7e8;
+            --dark: #2f2f2f;
+            --light: #f8f9fa;
+            --text: #333333;
+            --text-light: #6c757d;
+            --border: #e9ecef;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #ffffff;
+            color: var(--text);
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Навигация - фиксированная верхняя панель */
+        .navbar {
+            background: white;
+            border-bottom: 1px solid var(--border);
+            padding: 0.5rem 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .navbar .container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: nowrap;
+        }
+
+        .navbar-brand {
+            font-weight: 500;
+            color: var(--dark);
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
+            white-space: nowrap;
+        }
+
+        .brand-logo {
+            background: var(--primary);
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 0.9rem;
+        }
+
+        /* Навигационное меню - горизонтальное */
+        .nav-menu {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            margin: 0;
+            padding: 0;
+            list-style: none;
+            flex-wrap: nowrap;
+        }
+
+        .nav-item {
+            margin: 0;
+        }
+
+        .nav-link {
+            color: var(--text-light);
+            font-weight: 400;
+            padding: 0.4rem 0.8rem;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            font-size: 0.9rem;
+            white-space: nowrap;
+        }
+
+        .nav-link:hover {
+            background: var(--primary-light);
+            color: var(--primary);
+        }
+
+        .nav-link.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        /* Пользовательская панель */
+        .user-panel {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-shrink: 0;
+        }
+
+        /* Кнопка уведомлений */
+        .notifications-btn {
+            position: relative;
+            background: transparent;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 0.4rem 0.8rem;
+            color: var(--text-light);
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        .notifications-btn:hover {
+            background: var(--light);
+            color: var(--dark);
+        }
+
+        .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #dc3545;
+            color: white;
+            font-size: 0.6rem;
+            font-weight: 600;
+            min-width: 18px;
+            height: 18px;
+            border-radius: 9px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 4px;
+        }
+
+        /* Выпадающее меню уведомлений */
+        .notifications-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            width: 350px;
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            margin-top: 0.5rem;
+            display: none;
+            z-index: 1000;
+        }
+
+        .notifications-dropdown.show {
+            display: block;
+        }
+
+        .notifications-header {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .notifications-header h6 {
+            margin: 0;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .mark-read-btn {
+            background: none;
+            border: none;
+            color: var(--primary);
+            font-size: 0.75rem;
+            cursor: pointer;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+        }
+
+        .mark-read-btn:hover {
+            background: var(--primary-light);
+        }
+
+        .notifications-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .notification-item {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--border);
+            transition: background-color 0.2s ease;
+            cursor: pointer;
+        }
+
+        .notification-item:hover {
+            background-color: var(--light);
+        }
+
+        .notification-item.unread {
+            background-color: var(--primary-light);
+        }
+
+        .notification-item.unread:hover {
+            background-color: #d4edda;
+        }
+
+        .notification-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 0.75rem;
+            flex-shrink: 0;
+        }
+
+        .notification-content {
+            flex: 1;
+        }
+
+        .notification-title {
+            font-size: 0.85rem;
+            font-weight: 500;
+            margin-bottom: 0.2rem;
+        }
+
+        .notification-message {
+            font-size: 0.75rem;
+            color: var(--text-light);
+            margin-bottom: 0.2rem;
+        }
+
+        .notification-time {
+            font-size: 0.65rem;
+            color: var(--text-light);
+        }
+
+        .notifications-footer {
+            padding: 0.75rem 1rem;
+            border-top: 1px solid var(--border);
+            text-align: center;
+        }
+
+        .notifications-footer a {
+            color: var(--text-light);
+            font-size: 0.8rem;
+            text-decoration: none;
+        }
+
+        .notifications-footer a:hover {
+            color: var(--primary);
+        }
+
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: var(--primary-light);
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            flex-shrink: 0;
+        }
+
+        .user-info {
+            display: flex;
+            flex-direction: column;
+            line-height: 1.3;
+            margin-right: 0.5rem;
+        }
+
+        .user-name {
+            font-weight: 500;
+            font-size: 0.9rem;
+            white-space: nowrap;
+        }
+
+        .user-role {
+            font-size: 0.75rem;
+            color: var(--text-light);
+            white-space: nowrap;
+        }
+
+        .logout-btn {
+            background: transparent;
+            color: var(--text-light);
+            border: 1px solid var(--border);
+            padding: 0.4rem 0.8rem;
+            border-radius: 4px;
+            font-weight: 400;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            transition: all 0.2s ease;
+            font-size: 0.9rem;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .logout-btn:hover {
+            background: var(--light);
+            color: var(--dark);
+        }
+
+        /* Основной контент */
+        .page-container {
+            flex: 1;
+            max-width: 1400px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 2rem 1.5rem;
+        }
+
+        /* Карточки */
+        .card-modern {
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: white;
+            transition: box-shadow 0.2s ease;
+        }
+
+        .card-modern:hover {
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .card-header-modern {
+            background: white;
+            border-bottom: 1px solid var(--border);
+            padding: 0.75rem 1.25rem;
+            font-weight: 500;
+            color: var(--dark);
+        }
+
+        /* Кнопки */
+        .btn-custom {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.4rem 1rem;
+            border-radius: 4px;
+            font-weight: 400;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            transition: background 0.2s ease;
+            font-size: 0.9rem;
+        }
+
+        .btn-custom:hover {
+            background: var(--primary-dark);
+            color: white;
+        }
+
+        .btn-custom-outline {
+            background: transparent;
+            color: var(--text);
+            border: 1px solid var(--border);
+            padding: 0.4rem 1rem;
+            border-radius: 4px;
+            font-weight: 400;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            font-size: 0.9rem;
+        }
+
+        .btn-custom-outline:hover {
+            background: var(--light);
+            border-color: var(--text-light);
+        }
+
+        /* Футер */
+        .footer {
+            background: white;
+            border-top: 1px solid var(--border);
+            padding: 1.5rem 0;
+            margin-top: auto;
+            text-align: center;
+            color: var(--text-light);
+            font-size: 0.85rem;
+        }
+
+        /* Модальные окна */
+        .modal-content {
+            border: none;
+            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .modal-header {
+            border-bottom: 1px solid var(--border);
+            padding: 1rem 1.25rem;
+        }
+
+        .modal-footer {
+            border-top: 1px solid var(--border);
+            padding: 1rem 1.25rem;
+        }
+
+        .modal-title {
+            font-size: 1rem;
+            font-weight: 500;
+        }
+
+        /* Утилиты */
+        .badge-custom {
+            background: var(--primary-light);
+            color: var(--primary);
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 400;
+        }
+
+        /* Адаптивность для мобильных устройств */
+        @media (max-width: 992px) {
+            .navbar .container {
+                flex-wrap: wrap;
+            }
+
+            .nav-menu {
+                order: 3;
+                width: 100%;
+                margin-top: 0.5rem;
+                padding-top: 0.5rem;
+                border-top: 1px solid var(--border);
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .user-info {
+                display: none;
+            }
+
+            .notifications-dropdown {
+                width: 300px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .page-container {
+                padding: 1rem;
+            }
+        }
+
+        /* Анимации */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.2s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .notification-item {
+            animation: slideIn 0.2s ease-out;
+        }
+    </style>
+
+    {% block extra_css %}{% endblock %}
+</head>
+
+<body>
+    <!-- Навигация - фиксированная верхняя панель -->
+    <nav class="navbar">
+        <div class="container">
+            <!-- Логотип слева -->
+            <a class="navbar-brand" href="/main">
+                <div class="brand-logo">
+                    <i class="bi bi-mortarboard-fill"></i>
+                </div>
+                <span>Курсовые работы</span>
+            </a>
+
+            <!-- Центральное меню - всегда видимое -->
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a class="nav-link {% if request.path == '/main' %}active{% endif %}" href="/main">
+                        <i class="bi bi-house"></i>
+                        <span>Главная</span>
+                    </a>
+                </li>
+
+                {% if not current_user or (current_user.role != 'admin') %}
+                <li class="nav-item">
+                    <a class="nav-link {% if request.path == '/' %}active{% endif %}" href="/">
+                        <i class="bi bi-people"></i>
+                        <span>Студенты</span>
+                    </a>
+                </li>
+                {% endif %}
+
+                {% if current_user and (current_user.role == 'teacher' or current_user.role == 'admin') %}
+                <li class="nav-item">
+                    <a class="nav-link {% if request.path == '/archive' %}active{% endif %}" href="/archive">
+                        <i class="bi bi-archive"></i>
+                        <span>Архив</span>
+                    </a>
+                </li>
+                {% endif %}
+
+                {% if current_user and (current_user.role == "teacher" or current_user.role == "admin") %}
+                <li class="nav-item">
+                    <a class="nav-link {% if request.path == '/my-students' %}active{% endif %}" href="/my-students">
+                        <i class="bi bi-person-badge"></i>
+                        <span>{% if current_user.role == "admin" %}Все студенты{% else %}Мои студенты{% endif %}</span>
+                    </a>
+                </li>
+                {% endif %}
+
+                {% if current_user and current_user.role == "admin" %}
+                <li class="nav-item">
+                    <a class="nav-link {% if request.path == '/admin/teachers' %}active{% endif %}" href="/admin/teachers">
+                        <i class="bi bi-person-workspace"></i>
+                        <span>Преподаватели</span>
+                    </a>
+                </li>
+                {% endif %}
+
+                {% if current_user and current_user.role == "student" %}
+                <li class="nav-item">
+                    <a class="nav-link {% if request.path == '/student-work' %}active{% endif %}" href="/student-work">
+                        <i class="bi bi-journal-text"></i>
+                        <span>Работа</span>
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+
+            <!-- Пользовательская панель справа -->
+            <div class="user-panel">
+                {% if current_user %}
+                <!-- Кнопка уведомлений - показываем только для студентов и преподавателей, НЕ для админов -->
+                {% if current_user.role != "admin" %}
+                <div class="notifications-wrapper" style="position: relative;">
+                    <button class="notifications-btn" id="notificationsToggle" onclick="toggleNotifications()">
+                        <i class="bi bi-bell"></i>
+                        <span class="d-none d-md-inline">Уведомления</span>
+                        <span class="notification-badge" id="notificationBadge" style="display: none;">0</span>
+                    </button>
+
+                    <!-- Выпадающее меню уведомлений -->
+                    <div class="notifications-dropdown" id="notificationsDropdown">
+                        <div class="notifications-header">
+                            <h6>Уведомления</h6>
+                            <button class="mark-read-btn" onclick="markAllAsRead()">✓ Прочитать все</button>
+                        </div>
+                        <div class="notifications-list" id="notificationsList">
+                            <!-- Уведомления будут загружаться через JavaScript -->
+                            <div class="text-center py-4">
+                                <div class="spinner-border" role="status" style="color: var(--primary); width: 1.5rem; height: 1.5rem;">
+                                    <span class="visually-hidden">Загрузка...</span>
+                                </div>
+                                <p class="mt-2 small text-secondary">Загрузка уведомлений...</p>
+                            </div>
+                        </div>
+                        <div class="notifications-footer">
+                            <a href="#" onclick="showAllNotifications(event)">Все уведомления</a>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <div class="user-avatar">
+                    {% if current_user.role == "admin" %}
+                        <i class="bi bi-shield-fill"></i>
+                    {% elif current_user.role == "teacher" %}
+                        <i class="bi bi-person-badge-fill"></i>
+                    {% else %}
+                        <i class="bi bi-person-circle"></i>
+                    {% endif %}
+                </div>
+
+                <div class="user-info">
+                    <div class="user-name">{{ current_user.full_name }}</div>
+                    <div class="user-role">
+                        {% if current_user.role == "admin" %}
+                            Администратор
+                        {% elif current_user.role == "teacher" %}
+                            Преподаватель
+                        {% else %}
+                            Студент
+                        {% endif %}
+                    </div>
+                </div>
+
+                <a href="#" class="logout-btn" onclick="confirmLogout(); return false;">
+                    <i class="bi bi-box-arrow-right"></i>
+                    <span>Выйти</span>
+                </a>
+                {% else %}
+                <a href="/login" class="btn-custom">
+                    <i class="bi bi-box-arrow-in-right"></i>
+                    <span>Вход</span>
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <!-- Основной контент -->
+    <main class="page-container fade-in">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Футер -->
+    <footer class="footer">
+        <div class="container">
+            <p class="mb-0">Дипломные работы · учебный проект</p>
+        </div>
+    </footer>
+
+    <!-- Модальное окно подтверждения выхода -->
+    <div class="modal fade" id="logoutModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content">
+                <div class="modal-body text-center p-4">
+                    <p class="mb-3">Выйти из системы?</p>
+                    <div class="d-flex gap-2 justify-content-center">
+                        <button type="button" class="btn-custom-outline" data-bs-dismiss="modal">Отмена</button>
+                        <a href="/logout" class="btn-custom">Выйти</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно для просмотра всех уведомлений -->
+    <div class="modal fade" id="allNotificationsModal" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="bi bi-bell me-2" style="color: var(--primary);"></i>
+                        Все уведомления
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-0">
+                    <div class="list-group list-group-flush" id="allNotificationsList">
+                        <!-- Все уведомления будут загружаться через JavaScript -->
+                        <div class="text-center py-5">
+                            <div class="spinner-border" role="status" style="color: var(--primary);">
+                                <span class="visually-hidden">Загрузка...</span>
+                            </div>
+                            <p class="mt-2 text-secondary">Загрузка уведомлений...</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-custom-outline" data-bs-dismiss="modal">Закрыть</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // Глобальные переменные
+        let currentUserRole = "{{ current_user.role if current_user else '' }}";
+        let currentUserId = {{ current_user.id if current_user else 'null' }};
+        let notificationsVisible = false;
+        let notificationsLoaded = false;
+        let unreadCount = 0;
+
+        // Функция подтверждения выхода
+        function confirmLogout() {
+            const modalElement = document.getElementById('logoutModal');
+            if (modalElement) {
+                try {
+                    const modal = new bootstrap.Modal(modalElement);
+                    modal.show();
+                } catch (e) {
+                    console.error('Ошибка при открытии модального окна:', e);
+                    window.location.href = '/logout';
+                }
+            } else {
+                window.location.href = '/logout';
+            }
+            return false;
+        }
+
+        // Автоматическая подсветка активного пункта меню
+        document.addEventListener('DOMContentLoaded', function() {
+            const currentPath = window.location.pathname;
+            document.querySelectorAll('.nav-link').forEach(link => {
+                if (currentPath === link.getAttribute('href')) {
+                    link.classList.add('active');
+                }
+            });
+
+            // Загружаем уведомления при загрузке страницы (только для не-админов)
+            if (currentUserId && currentUserRole !== 'admin') {
+                loadNotifications();
+            }
+
+            // Закрываем выпадающее меню при клике вне его
+            document.addEventListener('click', function(event) {
+                const dropdown = document.getElementById('notificationsDropdown');
+                const toggle = document.getElementById('notificationsToggle');
+
+                if (notificationsVisible && dropdown && toggle &&
+                    !dropdown.contains(event.target) && !toggle.contains(event.target)) {
+                    dropdown.classList.remove('show');
+                    notificationsVisible = false;
+                }
+            });
+        });
+
+        // ========== УВЕДОМЛЕНИЯ ==========
+
+        // Переключение выпадающего меню
+        function toggleNotifications() {
+            const dropdown = document.getElementById('notificationsDropdown');
+            if (!dropdown) return;
+
+            notificationsVisible = !notificationsVisible;
+
+            if (notificationsVisible) {
+                dropdown.classList.add('show');
+                if (!notificationsLoaded) {
+                    loadNotifications();
+                }
+            } else {
+                dropdown.classList.remove('show');
+            }
+        }
+
+        // Загрузка уведомлений
+        async function loadNotifications() {
+            if (!currentUserId) return;
+
+            try {
+                const response = await fetch(`/api/notifications/${currentUserId}`);
+                const data = await response.json();
+
+                if (data.success) {
+                    displayNotifications(data.notifications);
+                    updateNotificationBadge(data.unread_count);
+                    notificationsLoaded = true;
+                } else {
+                    console.error('Ошибка загрузки уведомлений:', data.error);
+                    showNotificationError();
+                }
+            } catch (error) {
+                console.error('Ошибка загрузки уведомлений:', error);
+                showNotificationError();
+            }
+        }
+
+        // Отображение уведомлений в выпадающем списке
+        function displayNotifications(notifications) {
+            const list = document.getElementById('notificationsList');
+            if (!list) return;
+
+            if (!notifications || notifications.length === 0) {
+                list.innerHTML = `
+                    <div class="text-center py-4 text-secondary">
+                        <i class="bi bi-bell-slash" style="font-size: 2rem; opacity: 0.3;"></i>
+                        <p class="mt-2 mb-0 small">Нет уведомлений</p>
+                    </div>
+                `;
+                updateNotificationBadge(0);
+                return;
+            }
+
+            // Показываем только последние 5 уведомлений
+            const recentNotifications = notifications.slice(0, 5);
+
+            let html = '';
+            recentNotifications.forEach(notification => {
+                html += renderNotificationItem(notification);
+            });
+
+            list.innerHTML = html;
+        }
+
+        // Рендеринг одного уведомления
+        function renderNotificationItem(notification) {
+            const icon = getNotificationIcon(notification.type);
+            const iconColor = getNotificationIconColor(notification.type);
+            const timeAgo = getTimeAgo(notification.created_at);
+            const unreadClass = notification.is_read ? '' : 'unread';
+
+            return `
+                <div class="notification-item ${unreadClass}" onclick="markAsRead(${notification.id}, '${notification.link || '#'}')">
+                    <div class="d-flex align-items-start">
+                        <div class="notification-icon" style="background: ${iconColor}20; color: ${iconColor};">
+                            <i class="bi ${icon}"></i>
+                        </div>
+                        <div class="notification-content">
+                            <div class="notification-title">${escapeHtml(notification.title)}</div>
+                            <div class="notification-message">${escapeHtml(notification.message)}</div>
+                            <div class="notification-time">${timeAgo}</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Получение иконки по типу уведомления
+        function getNotificationIcon(type) {
+            const icons = {
+                'task_added': 'bi-plus-circle',
+                'task_completed': 'bi-check-circle',
+                'task_redone': 'bi-arrow-repeat',
+                'task_deleted': 'bi-trash',
+                'task_uncompleted': 'bi-arrow-counterclockwise',
+                'meeting_added': 'bi-calendar-plus',
+                'meeting_updated': 'bi-calendar-check',
+                'file_added': 'bi-file-earmark-plus',
+                'file_deleted': 'bi-file-earmark-x',
+                'material_added': 'bi-book',
+                'warning': 'bi-exclamation-triangle',
+                'danger': 'bi-exclamation-circle',
+                'info': 'bi-info-circle',
+                'default': 'bi-bell'
+            };
+            return icons[type] || icons.default;
+        }
+
+        // Получение цвета иконки по типу уведомления
+        function getNotificationIconColor(type) {
+            const colors = {
+                'task_added': '#41c443',
+                'task_completed': '#41c443',
+                'task_redone': '#ff9800',
+                'task_deleted': '#dc3545',
+                'task_uncompleted': '#ffc107',
+                'meeting_added': '#0d6efd',
+                'meeting_updated': '#0d6efd',
+                'file_added': '#41c443',
+                'file_deleted': '#dc3545',
+                'material_added': '#6f42c1',
+                'warning': '#ffc107',
+                'danger': '#dc3545',
+                'info': '#0d6efd',
+                'default': '#6c757d'
+            };
+            return colors[type] || colors.default;
+        }
+
+        // Обновление бейджа уведомлений
+        function updateNotificationBadge(count) {
+            const badge = document.getElementById('notificationBadge');
+            if (!badge) return;
+
+            unreadCount = count;
+
+            if (count > 0) {
+                badge.textContent = count > 99 ? '99+' : count;
+                badge.style.display = 'flex';
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+
+        // Функция отметки уведомления как прочитанного
+        async function markAsRead(notificationId, link) {
+            try {
+                const response = await fetch(`/api/notifications/${notificationId}/read`, {
+                    method: 'POST'
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Обновляем класс элемента
+                    const item = document.querySelector(`.notification-item[onclick*="${notificationId}"]`);
+                    if (item) {
+                        item.classList.remove('unread');
+                    }
+
+                    // Обновляем класс в модальном окне
+                    const modalItem = document.querySelector(`.list-group-item[onclick*="${notificationId}"]`);
+                    if (modalItem) {
+                        modalItem.classList.remove('list-group-item-primary');
+                    }
+
+                    // Обновляем счетчик
+                    unreadCount = Math.max(0, unreadCount - 1);
+                    updateNotificationBadge(unreadCount);
+                }
+
+                // Переходим по ссылке
+                if (link && link !== '#') {
+                    setTimeout(() => {
+                        window.location.href = link;
+                    }, 300);
+                }
+            } catch (error) {
+                console.error('Ошибка при отметке уведомления:', error);
+                if (link && link !== '#') {
+                    window.location.href = link;
+                }
+            }
+        }
+
+        // Отметить все уведомления как прочитанные
+        async function markAllAsRead() {
+            try {
+                const response = await fetch(`/api/notifications/${currentUserId}/read-all`, {
+                    method: 'POST'
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Обновляем все элементы
+                    document.querySelectorAll('.notification-item').forEach(item => {
+                        item.classList.remove('unread');
+                    });
+                    document.querySelectorAll('.list-group-item-primary').forEach(item => {
+                        item.classList.remove('list-group-item-primary');
+                    });
+
+                    // Обновляем счетчик
+                    updateNotificationBadge(0);
+
+                    showNotification('Все уведомления отмечены как прочитанные', 'success');
+                }
+            } catch (error) {
+                console.error('Ошибка при отметке всех уведомлений:', error);
+            }
+        }
+
+        // Показать все уведомления
+        function showAllNotifications(event) {
+            event.preventDefault();
+
+            const dropdown = document.getElementById('notificationsDropdown');
+            if (dropdown) {
+                dropdown.classList.remove('show');
+            }
+            notificationsVisible = false;
+
+            const modalElement = document.getElementById('allNotificationsModal');
+            if (modalElement) {
+                try {
+                    const modal = new bootstrap.Modal(modalElement);
+                    modal.show();
+                    loadAllNotifications();
+                } catch (e) {
+                    console.error('Ошибка при открытии модального окна:', e);
+                }
+            }
+        }
+
+        // Загрузка всех уведомлений
+        async function loadAllNotifications() {
+            if (!currentUserId) return;
+
+            const list = document.getElementById('allNotificationsList');
+            if (!list) return;
+
+            try {
+                const response = await fetch(`/api/notifications/${currentUserId}/all?page=1&limit=50`);
+                const data = await response.json();
+
+                if (data.success) {
+                    displayAllNotifications(data.notifications);
+                } else {
+                    throw new Error(data.error || 'Ошибка загрузки');
+                }
+            } catch (error) {
+                console.error('Ошибка загрузки всех уведомлений:', error);
+                list.innerHTML = `
+                    <div class="text-center py-5 text-danger">
+                        <i class="bi bi-exclamation-triangle" style="font-size: 2rem;"></i>
+                        <p class="mt-2">Ошибка загрузки уведомлений</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Отображение всех уведомлений
+        function displayAllNotifications(notifications) {
+            const list = document.getElementById('allNotificationsList');
+            if (!list) return;
+
+            if (!notifications || notifications.length === 0) {
+                list.innerHTML = `
+                    <div class="text-center py-5 text-secondary">
+                        <i class="bi bi-bell-slash" style="font-size: 3rem; opacity: 0.3;"></i>
+                        <p class="mt-3">Нет уведомлений</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '';
+            notifications.forEach(notification => {
+                html += renderFullNotificationItem(notification);
+            });
+
+            list.innerHTML = html;
+        }
+
+        // Рендеринг полного уведомления для модального окна
+        function renderFullNotificationItem(notification) {
+            const icon = getNotificationIcon(notification.type);
+            const iconColor = getNotificationIconColor(notification.type);
+            const timeAgo = getTimeAgo(notification.created_at);
+            const unreadClass = notification.is_read ? '' : 'list-group-item-primary';
+
+            return `
+                <div class="list-group-item ${unreadClass}" style="cursor: pointer;" onclick="markAsRead(${notification.id}, '${notification.link || '#'}')">
+                    <div class="d-flex align-items-start">
+                        <div class="notification-icon" style="background: ${iconColor}20; color: ${iconColor};">
+                            <i class="bi ${icon}"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6 class="mb-1">${escapeHtml(notification.title)}</h6>
+                                    <p class="mb-1 text-secondary small">${escapeHtml(notification.message)}</p>
+                                </div>
+                                <small class="text-secondary ms-3">${timeAgo}</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+// Форматирование времени
+function getTimeAgo(dateString) {
+    if (!dateString) return '';
+
+    try {
+        // Создаем дату из строки (она в UTC)
+        const utcDate = new Date(dateString);
+
+        // Создаем новую дату с учетом часового пояса (+3 часа)
+        // Получаем часовой пояс пользователя
+        const userTimezoneOffset = new Date().getTimezoneOffset(); // в минутах
+        // Для Москвы (UTC+3) offset = -180 минут, поэтому прибавляем 180 минут к UTC
+
+        // Корректируем UTC время на часовой пояс пользователя
+        const localDate = new Date(utcDate.getTime() - (userTimezoneOffset * 60 * 1000));
+
+        const now = new Date();
+        const diffMs = now - localDate;
+        const diffMins = Math.floor(diffMs / 60000);
+        const diffHours = Math.floor(diffMins / 60);
+        const diffDays = Math.floor(diffHours / 24);
+
+        if (diffMins < 1) return 'только что';
+        if (diffMins < 60) return `${diffMins} ${pluralize(diffMins, 'минута', 'минуты', 'минут')} назад`;
+        if (diffHours < 24) return `${diffHours} ${pluralize(diffHours, 'час', 'часа', 'часов')} назад`;
+        if (diffDays < 7) return `${diffDays} ${pluralize(diffDays, 'день', 'дня', 'дней')} назад`;
+
+        return localDate.toLocaleDateString('ru-RU', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    } catch (e) {
+        return '';
+    }
+}
+
+        // Склонение слов
+        function pluralize(count, one, few, many) {
+            if (count % 10 === 1 && count % 100 !== 11) {
+                return one;
+            } else if (count % 10 >= 2 && count % 10 <= 4 && (count % 100 < 10 || count % 100 >= 20)) {
+                return few;
+            } else {
+                return many;
+            }
+        }
+
+        // Показать уведомление об ошибке
+        function showNotificationError() {
+            const list = document.getElementById('notificationsList');
+            if (!list) return;
+
+            list.innerHTML = `
+                <div class="text-center py-4 text-danger">
+                    <i class="bi bi-exclamation-triangle" style="font-size: 2rem;"></i>
+                    <p class="mt-2 small">Ошибка загрузки уведомлений</p>
+                </div>
+            `;
+        }
+
+        // Показать всплывающее уведомление
+        function showNotification(message, type = 'info') {
+            const alertClass = type === 'success' ? 'alert-success' :
+                              type === 'warning' ? 'alert-warning' :
+                              type === 'error' ? 'alert-danger' : 'alert-info';
+
+            const notification = document.createElement('div');
+            notification.className = `alert ${alertClass} alert-dismissible fade show`;
+            notification.style.position = 'fixed';
+            notification.style.top = '20px';
+            notification.style.right = '20px';
+            notification.style.zIndex = '9999';
+            notification.style.minWidth = '300px';
+            notification.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+
+            notification.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.remove();
+                }
+            }, 3000);
+        }
+
+        // Функция экранирования HTML
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Функция для принудительного обновления уведомлений
+        function refreshNotifications() {
+            notificationsLoaded = false;
+            loadNotifications();
+        }
+    </script>
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

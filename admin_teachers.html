@@ -1,0 +1,314 @@
+{% extends "base.html" %}
+
+{% block title %}Преподаватели - Администратор{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <!-- Заголовок -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2 class="fw-light mb-1">Преподаватели</h2>
+                    <div class="text-muted">
+                        <span class="small">Всего: {{ total_teachers }} · </span>
+                        <span class="small">Студентов: {{ total_all_students }} · </span>
+                        <span class="small">Ср.: {{ avg_students_per_teacher }}</span>
+                    </div>
+                </div>
+
+                <!-- Экспорт -->
+                <div class="dropdown">
+                    <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        Выгрузить
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item small" href="/admin/export/teachers/excel" target="_blank">Excel</a></li>
+                        <li><a class="dropdown-item small" href="/admin/export/teachers/csv" target="_blank">CSV</a></li>
+                        <li><a class="dropdown-item small" href="/admin/export/teachers/json" target="_blank">JSON</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Краткая статистика -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="bg-light p-3 rounded-3">
+                <div class="d-flex flex-wrap gap-4 small">
+                    <span class="text-dark">Темы: {{ teachers|sum(attribute='topics_selected') }} выбрали / {{ teachers|sum(attribute='topics_not_selected') }} нет</span>
+                    <span class="text-dark">PDF: {{ teachers|sum(attribute='pdf_submitted') }} сдан</span>
+                    <span class="text-dark">Бумага: {{ teachers|sum(attribute='physical_submitted') }} сдано</span>
+
+                    <!-- Статистика по встречам -->
+                    <span class="text-danger fw-medium">Давно: {{ total_no_calls }}</span>
+                    <span class="text fw-medium">Нерег.: {{ total_irregular_calls }}</span>
+                    <span class="textfw-medium">Рег.: {{ total_regular_calls }}</span>
+
+                    <span class="text-dark text-muted">{{ now().strftime('%d.%m.%Y') }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Карточки преподавателей -->
+    <div class="row g-4">
+        {% for teacher in teachers %}
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <!-- Заголовок с именем и количеством студентов -->
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <h6 class="fw-semibold mb-0">{{ teacher.full_name }}</h6>
+                        <span class="badge bg-secondary bg-opacity-10 text-dark rounded-pill px-3 py-2 small fw-normal">
+                            {{ teacher.total_students }}
+                        </span>
+                    </div>
+
+                    <!-- Распределение по курсам -->
+                    <div class="d-flex justify-content-between mb-3 small">
+                        <span class="text-secondary">2 курс: <span class="text-dark">{{ teacher.students_by_course.2 }}</span></span>
+                        <span class="text-secondary">3 курс: <span class="text-dark">{{ teacher.students_by_course.3 }}</span></span>
+                        <span class="text-secondary">4 курс: <span class="text-dark">{{ teacher.students_by_course.4 }}</span></span>
+                    </div>
+
+                    <!-- Статистика встреч по преподавателю -->
+                    <div class="d-flex gap-3 mb-2 small">
+                        <span class="text-secondary">Встречи:</span>
+                        <span class="text-danger" title="Давно не звонили">Давно {{ teacher.no_calls_count }}</span>
+                        <span class="text" title="Нерегулярные">Нерег. {{ teacher.irregular_calls_count }}</span>
+                        <span class="text" title="Регулярные">Рег. {{ teacher.regular_calls_count }}</span>
+                    </div>
+
+                    <!-- Прогресс-бар по темам -->
+                    <div class="mb-2">
+                        <div class="progress" style="height: 6px;">
+                            <div class="progress-bar bg-success" style="width: {{ teacher.topic_percentage }}%"></div>
+                            <div class="progress-bar bg-danger" style="width: {{ 100 - teacher.topic_percentage }}%"></div>
+                        </div>
+                        <div class="d-flex justify-content-between mt-1 small text-secondary">
+                            <span>темы: {{ teacher.topics_selected }} / {{ teacher.total_students }}</span>
+                            <span>{{ teacher.topic_percentage }}%</span>
+                        </div>
+                    </div>
+
+                    <!-- Статистика сдачи работ -->
+                    <div class="border-top pt-3 mt-3">
+                        <div class="row g-1 small">
+                            <div class="col-6 text-secondary">PDF сдан</div>
+                            <div class="col-6 text-end">{{ teacher.pdf_submitted }} / {{ teacher.total_students }}</div>
+
+                            <div class="col-6 text-secondary">Бумага</div>
+                            <div class="col-6 text-end">{{ teacher.physical_submitted }} / {{ teacher.total_students }}</div>
+
+                            {% if teacher.fourth_year_count > 0 %}
+                            <div class="col-6 text-secondary mt-2">Плагиат (4к)</div>
+                            <div class="col-6 text-end mt-2">{{ teacher.fourth_year_plagiarism }} / {{ teacher.fourth_year_count }}</div>
+
+                            <div class="col-6 text-secondary">Аннотация (4к)</div>
+                            <div class="col-6 text-end">{{ teacher.fourth_year_annotation }} / {{ teacher.fourth_year_count }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Ссылки -->
+                    <div class="mt-3">
+                        <a href="/admin/teacher/{{ teacher.id }}/students" class="btn btn-link text-dark p-0 small text-decoration-none">
+                            → Студенты
+                        </a>
+                        {% if teacher.external_link and teacher.external_link != "#" %}
+                        <a href="{{ teacher.external_link }}" target="_blank" class="btn btn-link text-secondary p-0 small text-decoration-none ms-3">
+                            Профиль
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Скрипты экспорта -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+<script>
+// Данные для экспорта
+const teachersData = {{ teachers|tojson }};
+
+function exportToExcel() {
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(teachersData.map(t => ({
+        'Преподаватель': t.full_name,
+        'Всего студентов': t.total_students,
+        '2 курс': t.students_by_course[2] || 0,
+        '3 курс': t.students_by_course[3] || 0,
+        '4 курс': t.students_by_course[4] || 0,
+        'Темы выбрали': t.topics_selected,
+        'Темы не выбрали': t.topics_not_selected,
+        'PDF сдан': t.pdf_submitted,
+        'Бумага сдана': t.physical_submitted,
+        'Плагиат (4к)': t.fourth_year_plagiarism || 0,
+        'Аннотация (4к)': t.fourth_year_annotation || 0,
+        'Давно не звонили': t.no_calls_count || 0,
+        'Нерегулярные': t.irregular_calls_count || 0,
+        'Регулярные': t.regular_calls_count || 0
+    })));
+    XLSX.utils.book_append_sheet(wb, ws, 'Преподаватели');
+    XLSX.writeFile(wb, `teachers_${new Date().toISOString().slice(0,10)}.xlsx`);
+}
+
+function exportToCSV() {
+    const headers = [
+        'Преподаватель', 'Всего', '2к', '3к', '4к',
+        'Темы есть', 'Тем нет', 'PDF', 'Бумага',
+        'Плагиат', 'Аннотация', 'Давно', 'Нерег', 'Рег'
+    ];
+    const rows = teachersData.map(t => [
+        t.full_name,
+        t.total_students,
+        t.students_by_course[2] || 0,
+        t.students_by_course[3] || 0,
+        t.students_by_course[4] || 0,
+        t.topics_selected,
+        t.topics_not_selected,
+        t.pdf_submitted,
+        t.physical_submitted,
+        t.fourth_year_plagiarism || 0,
+        t.fourth_year_annotation || 0,
+        t.no_calls_count || 0,
+        t.irregular_calls_count || 0,
+        t.regular_calls_count || 0
+    ]);
+
+    const csv = [headers, ...rows].map(row => row.join(',')).join('\n');
+    const blob = new Blob(["\ufeff" + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `teachers_${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+}
+
+function exportToJSON() {
+    const data = {
+        date: new Date().toISOString(),
+        total_teachers: {{ total_teachers }},
+        total_students: {{ total_all_students }},
+        teachers: teachersData
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `teachers_${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+}
+
+// Подключаем кнопки
+document.addEventListener('DOMContentLoaded', function() {
+    const dropdownItems = document.querySelectorAll('.dropdown-item');
+    if (dropdownItems.length >= 3) {
+        dropdownItems[0].addEventListener('click', (e) => { e.preventDefault(); exportToExcel(); });
+        dropdownItems[1].addEventListener('click', (e) => { e.preventDefault(); exportToCSV(); });
+        dropdownItems[2].addEventListener('click', (e) => { e.preventDefault(); exportToJSON(); });
+    }
+});
+</script>
+
+<style>
+/* Основные стили */
+.container-fluid {
+    padding: 1.5rem;
+}
+
+h2 {
+    font-size: 1.5rem;
+    font-weight: 300;
+    color: #212529;
+    margin-bottom: 0.5rem;
+}
+
+/* Карточки */
+.card {
+    transition: box-shadow 0.2s;
+    border-radius: 8px;
+}
+.card:hover {
+    box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.05) !important;
+}
+
+/* Прогресс-бар */
+.progress {
+    border-radius: 3px;
+    background-color: #f0f0f0;
+}
+.progress-bar {
+    transition: width 0.3s ease;
+}
+
+/* Бейджи */
+.badge {
+    font-weight: 400;
+    font-size: 0.7rem;
+    padding: 0.3rem 0.6rem;
+    border-radius: 4px;
+}
+.badge.bg-secondary.bg-opacity-10 {
+    background-color: rgba(108, 117, 125, 0.1) !important;
+}
+
+/* Кнопки-ссылки */
+.btn-link {
+    text-decoration: none;
+    font-size: 0.85rem;
+}
+.btn-link:hover {
+    text-decoration: underline;
+}
+
+/* Текст */
+.text-secondary {
+    color: #6c757d !important;
+}
+.text-muted {
+    color: #6c757d !important;
+}
+.fw-light {
+    font-weight: 300;
+}
+.fw-medium {
+    font-weight: 500;
+}
+.small {
+    font-size: 0.75rem;
+}
+
+/* Статистика в шапке */
+.bg-light {
+    background-color: #f8f9fa !important;
+    border-radius: 8px;
+}
+
+/* Статистика встреч */
+.text-danger, .text-warning, .text-success {
+    font-weight: 400;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+    .container-fluid {
+        padding: 1rem;
+    }
+
+    h2 {
+        font-size: 1.25rem;
+    }
+
+    .d-flex.flex-wrap.gap-4 {
+        gap: 0.75rem !important;
+    }
+}
+</style>
+{% endblock %}

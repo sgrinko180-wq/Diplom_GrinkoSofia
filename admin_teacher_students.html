@@ -1,0 +1,235 @@
+{% extends "base.html" %}
+
+{% block title %}Студенты - {{ teacher.full_name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <!-- Заголовок -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex align-items-center gap-2 mb-2">
+                <a href="/admin/teachers" class="text-secondary text-decoration-none small">← Преподаватели</a>
+                <span class="text-secondary">/</span>
+                <span class="small text-secondary">Студенты</span>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <h2 class="fw-light mb-1">{{ teacher.full_name }}</h2>
+                    <div class="text-muted small">
+                        Всего студентов: {{ total_students }}
+                        {% if teacher.external_link and teacher.external_link != "#" %}
+                        · <a href="{{ teacher.external_link }}" target="_blank" class="text-secondary text-decoration-none">Профиль</a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Статистика по встречам (как в примере) -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="bg-light p-3 rounded-3">
+                <div class="d-flex gap-4 flex-wrap small">
+                    <span class="text fw-medium">Давно не звонили: {{ students|selectattr('call_status', 'equalto', 'no_calls')|list|length }}</span>
+                    <span class="text fw-medium">Нерегулярные встречи: {{ students|selectattr('call_status', 'equalto', 'irregular_calls')|list|length }}</span>
+                    <span class="text fw-medium">Регулярные встречи: {{ students|selectattr('call_status', 'equalto', 'regular_calls')|list|length }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Вкладки по курсам -->
+    <div class="border-bottom mb-3">
+        <ul class="nav nav-tabs border-bottom-0" id="courseTabs" role="tablist">
+            {% for course in sorted_courses %}
+            {% set students_in_course = students_by_course[course] %}
+            {% set no_topic_count = students_in_course | selectattr("topic", "none") | list | length %}
+            <li class="nav-item" role="presentation">
+                <button class="nav-link {% if loop.first %}active{% endif %} px-3 py-2"
+                        id="course-{{ course }}-tab"
+                        data-bs-toggle="tab"
+                        data-bs-target="#course-{{ course }}"
+                        type="button"
+                        role="tab">
+                    {{ course }} курс
+                    <span class="ms-1 text-secondary small">{{ students_in_course|length }}</span>
+                    {% if no_topic_count > 0 %}
+                    <span class="ms-1 text-danger small">{{ no_topic_count }} без темы</span>
+                    {% endif %}
+                </button>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <!-- Контент вкладок -->
+    <div class="tab-content" id="courseTabsContent">
+        {% for course in sorted_courses %}
+        {% set students_in_course = students_by_course[course] %}
+        <div class="tab-pane fade {% if loop.first %}show active{% endif %}"
+             id="course-{{ course }}"
+             role="tabpanel">
+
+            <!-- Таблица -->
+            <div class="table-responsive">
+                <table class="table table-sm align-middle">
+                    <thead class="small text-secondary">
+                        <tr>
+                            <th style="width: 5%">№</th>
+                            <th style="width: 20%">Студент</th>
+                            <th style="width: 25%">Тема</th>
+                            <th style="width: 8%" class="text-center">PDF</th>
+                            <th style="width: 8%" class="text-center">Бумага</th>
+                            <th style="width: 8%" class="text-center">Плагиат</th>
+                            <th style="width: 8%" class="text-center">Аннотация</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for student in students_in_course %}
+                        <tr class="{% if not student.topic %}table-danger{% endif %}">
+                            <td class="text-secondary small">{{ loop.index }}</td>
+                            <td>
+                                <a href="/admin/student/{{ student.id }}" class="{% if not student.topic %}text-danger{% else %}text-dark{% endif %} text-decoration-none">
+                                    {{ student.full_name }}
+                                </a>
+                                {% if student.call_status %}
+                                <span class="ms-2 call-status-badge small badge-{{ student.call_status }}">
+                                    {{ student.call_status_label }}
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td class="small" style="max-width: 300px;">
+                                <span class="text-truncate d-inline-block {% if not student.topic %}text-danger{% endif %}" style="max-width: 280px;" title="{{ student.topic if student.topic else 'Тема не выбрана' }}">
+                                    {{ student.topic if student.topic else "—" }}
+                                </span>
+                            </td>
+                            <td class="text-center">
+                                {% if student.pdf_submitted %}
+                                <span class="text-success">✓</span>
+                                {% else %}
+                                <span class="text-danger">✗</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                {% if student.physical_submitted %}
+                                <span class="text-success">✓</span>
+                                {% else %}
+                                <span class="text-danger">✗</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                {% if student.course == 4 %}
+                                    {% if student.plagiarism_checked %}
+                                    <span class="text-success">✓</span>
+                                    {% else %}
+                                    <span class="text-danger">✗</span>
+                                    {% endif %}
+                                {% else %}
+                                <span class="text-secondary">–</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                {% if student.course == 4 %}
+                                    {% if student.annotation_submitted %}
+                                    <span class="text-success">✓</span>
+                                    {% else %}
+                                    <span class="text-danger">✗</span>
+                                    {% endif %}
+                                {% else %}
+                                <span class="text-secondary">–</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Статистика по курсу -->
+            <div class="mt-4 pt-2 small text-secondary border-top">
+                <div class="d-flex gap-4 flex-wrap">
+                    <span>Студентов: <span class="text-dark">{{ students_in_course|length }}</span></span>
+                    <span>Темы: <span class="text-dark">{{ students_in_course | selectattr("topic") | list | length }} / {{ students_in_course|length }}</span></span>
+                    <span>PDF: <span class="text-dark">{{ students_in_course | selectattr("pdf_submitted") | list | length }}</span></span>
+                    <span>Бумага: <span class="text-dark">{{ students_in_course | selectattr("physical_submitted") | list | length }}</span></span>
+                    <span class="text-danger">Давно: <span class="text-dark">{{ students_in_course | selectattr('call_status', 'equalto', 'no_calls') | list | length }}</span></span>
+                    <span class="text">Нерег.: <span class="text-dark">{{ students_in_course | selectattr('call_status', 'equalto', 'irregular_calls') | list | length }}</span></span>
+                    <span class="text">Рег.: <span class="text-dark">{{ students_in_course | selectattr('call_status', 'equalto', 'regular_calls') | list | length }}</span></span>
+                </div>
+                {% set no_topic_count = students_in_course | selectattr("topic", "none") | list | length %}
+                {% if no_topic_count > 0 %}
+                <div class="mt-2 text-danger small">
+                    {{ no_topic_count }} студент(ов) без темы
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<style>
+.nav-tabs .nav-link {
+    color: #6c757d;
+    border: none;
+    border-bottom: 2px solid transparent;
+}
+.nav-tabs .nav-link:hover {
+    border-color: transparent;
+    color: #212529;
+}
+.nav-tabs .nav-link.active {
+    color: #212529;
+    border-bottom: 2px solid #212529;
+    background: none;
+}
+.table td {
+    border-color: #f0f0f0;
+    padding: 0.75rem 0.5rem;
+}
+.table tr.table-danger {
+    background-color: #fff5f5;
+}
+.table tr.table-danger td {
+    background-color: transparent;
+}
+.table tr.table-danger:hover {
+    background-color: #ffeaea;
+}
+.text-truncate {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.bg-light {
+    background-color: #f8f9fa !important;
+    border-radius: 8px;
+}
+.rounded-3 {
+    border-radius: 8px;
+}
+/* Стили для бейджей статуса */
+.call-status-badge {
+    font-size: 0.65rem;
+    padding: 0.2rem 0.4rem;
+    border-radius: 4px;
+    font-weight: 400;
+}
+.badge-no_calls {
+    background-color: #fff5f5;
+    color: #dc3545;
+}
+.badge-irregular_calls {
+    background-color: #fff8e5;
+    color: #ff9800;
+}
+.badge-regular_calls {
+    background-color: #f0fff4;
+    color: #28a745;
+}
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+{% endblock %}

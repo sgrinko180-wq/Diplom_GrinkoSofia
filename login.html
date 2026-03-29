@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+
+{% block title %}Вход{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 400px;">
+    <div class="card-modern">
+        <div class="card-header-modern">
+            <i class="bi bi-box-arrow-in-right me-2"></i>
+            Вход в систему
+        </div>
+        <div class="card-body p-4">
+            <form method="post" action="{{ url_for('login_post') }}">
+                <div class="mb-3">
+                    <label for="email" class="form-label small text-secondary">Email</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-end-0">
+                            <i class="bi bi-envelope text-secondary"></i>
+                        </span>
+                        <input type="email"
+                               class="form-control border-start-0"
+                               id="email"
+                               name="email"
+                               placeholder="example@university.edu"
+                               required>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label for="password" class="form-label small text-secondary">Пароль</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-end-0">
+                            <i class="bi bi-lock text-secondary"></i>
+                        </span>
+                        <input type="password"
+                               class="form-control border-start-0"
+                               id="password"
+                               name="password"
+                               placeholder="••••••••"
+                               required>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-custom w-100 justify-content-center">
+                    <i class="bi bi-box-arrow-in-right"></i>
+                    Войти
+                </button>
+
+                {% if error %}
+                <div class="alert alert-danger mt-3 py-2 small">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    {{ error }}
+                </div>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+
+    <div class="text-center mt-3">
+        <p class="small text-secondary">
+            Демо-доступ: admin@example.com / admin
+        </p>
+    </div>
+</div>
+
+<style>
+.input-group-text {
+    border: 1px solid var(--border);
+    border-radius: 4px 0 0 4px;
+    background: var(--light);
+}
+
+.form-control {
+    border: 1px solid var(--border);
+    border-left: none;
+    border-radius: 0 4px 4px 0;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.9rem;
+}
+
+.form-control:focus {
+    border-color: var(--primary);
+    box-shadow: none;
+}
+
+.form-control:focus + .input-group-text,
+.input-group:focus-within .input-group-text {
+    border-color: var(--primary);
+}
+
+.btn-custom {
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+}
+
+.alert-danger {
+    background: #fff5f5;
+    border: 1px solid #ffc9c9;
+    color: #dc3545;
+    border-radius: 4px;
+}
+
+/* Анимация появления */
+.card-modern {
+    animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+</style>
+{% endblock %}

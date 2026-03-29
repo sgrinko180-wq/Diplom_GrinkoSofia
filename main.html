@@ -1,0 +1,254 @@
+{% extends "base.html" %}
+
+{% block title %}Главная{% endblock %}
+
+{% block content %}
+<!-- Главный баннер -->
+<div class="page-header mb-5">
+    <div class="header-content">
+        <h1 class="fw-light">Компьютерная математика<br>и системный анализ</h1>
+        <p class="text-secondary">Механико-математический факультет БГУ</p>
+    </div>
+</div>
+
+<!-- Основной контент -->
+<div class="container">
+    <!-- Блоки информации -->
+    <div class="row g-4 mb-5">
+        <div class="col-md-4">
+            <div class="card-modern h-100">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="feature-icon">
+                            <i class="bi bi-building text-primary"></i>
+                        </div>
+                        <h5 class="fw-medium mb-0 ms-3">О кафедре</h5>
+                    </div>
+                    <p class="text-secondary small mb-3">
+                        Краткая информация о кафедре и направлениях обучения.
+                        История, достижения и перспективы развития.
+                    </p>
+                    <a href="https://km.mmf.bsu.by/kafedra.html"
+                       class="btn-custom-outline w-100 justify-content-center"
+                       target="_blank">
+                        <span>Подробнее</span>
+                        <i class="bi bi-arrow-right ms-1"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card-modern h-100">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="feature-icon">
+                            <i class="bi bi-newspaper text-primary"></i>
+                        </div>
+                        <h5 class="fw-medium mb-0 ms-3">Новости</h5>
+                    </div>
+                    <p class="text-secondary small mb-3">
+                        Последние события и достижения кафедры.
+                        Научные конференции, семинары и мероприятия.
+                    </p>
+                    <a href="https://km.mmf.bsu.by/events.html"
+                       class="btn-custom-outline w-100 justify-content-center"
+                       target="_blank">
+                        <span>Подробнее</span>
+                        <i class="bi bi-arrow-right ms-1"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card-modern h-100">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="feature-icon">
+                            <i class="bi bi-journal-bookmark-fill text-primary"></i>
+                        </div>
+                        <h5 class="fw-medium mb-0 ms-3">Учебный процесс</h5>
+                    </div>
+                    <p class="text-secondary small mb-3">
+                        Материалы для студентов, расписание занятий,
+                        программы курсов и методические указания.
+                    </p>
+                    <a href="https://km.mmf.bsu.by/education.html"
+                       class="btn-custom-outline w-100 justify-content-center"
+                       target="_blank">
+                        <span>Подробнее</span>
+                        <i class="bi bi-arrow-right ms-1"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Секция анонсов -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card-modern">
+                <div class="card-header-modern d-flex align-items-center">
+                    <i class="bi bi-calendar-event me-2"></i>
+                    <h5 class="fw-medium mb-0">Ближайшие события</h5>
+                </div>
+                <div class="list-group list-group-flush">
+                    <a href="#" class="list-group-item list-group-item-action d-flex align-items-center px-4 py-3">
+                        <div class="event-date me-3">
+                            <span class="event-day">15</span>
+                            <span class="event-month">мар</span>
+                        </div>
+                        <div class="flex-grow-1">
+                            <h6 class="mb-1 fw-medium">Научный семинар кафедры</h6>
+                            <p class="mb-0 small text-secondary">Современные методы компьютерного моделирования</p>
+                        </div>
+                        <i class="bi bi-chevron-right text-secondary"></i>
+                    </a>
+
+                    <a href="#" class="list-group-item list-group-item-action d-flex align-items-center px-4 py-3">
+                        <div class="event-date me-3">
+                            <span class="event-day">22</span>
+                            <span class="event-month">мар</span>
+                        </div>
+                        <div class="flex-grow-1">
+                            <h6 class="mb-1 fw-medium">День открытых дверей</h6>
+                            <p class="mb-0 small text-secondary">Встреча с абитуриентами и их родителями</p>
+                        </div>
+                        <i class="bi bi-chevron-right text-secondary"></i>
+                    </a>
+
+                    <a href="#" class="list-group-item list-group-item-action d-flex align-items-center px-4 py-3">
+                        <div class="event-date me-3">
+                            <span class="event-day">05</span>
+                            <span class="event-month">апр</span>
+                        </div>
+                        <div class="flex-grow-1">
+                            <h6 class="mb-1 fw-medium">Защита курсовых работ</h6>
+                            <p class="mb-0 small text-secondary">3 курс, кафедра компьютерной математики</p>
+                        </div>
+                        <i class="bi bi-chevron-right text-secondary"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Стили для заголовка */
+.page-header {
+    position: relative;
+    padding: 4rem 0;
+    margin-bottom: 3rem;
+    background-image: url('/static/images/img.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.page-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.4) 100%);
+}
+
+.header-content {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+    color: white;
+}
+
+.header-content h1 {
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.header-content p {
+    font-size: 1.1rem;
+    opacity: 0.9;
+    color: rgba(255,255,255,0.9) !important;
+}
+
+/* Иконки для карточек */
+.feature-icon {
+    width: 48px;
+    height: 48px;
+    background: var(--primary-light);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    color: var(--primary);
+}
+
+/* Стили для списка событий */
+.list-group-item {
+    border: none;
+    border-bottom: 1px solid var(--border);
+    transition: background-color 0.2s ease;
+}
+
+.list-group-item:last-child {
+    border-bottom: none;
+}
+
+.list-group-item-action:hover {
+    background-color: var(--primary-light);
+}
+
+.event-date {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 50px;
+    height: 50px;
+    background: var(--primary-light);
+    border-radius: 8px;
+    color: var(--primary);
+    line-height: 1.2;
+}
+
+.event-day {
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.event-month {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+    .page-header {
+        padding: 2rem 0;
+        border-radius: 8px;
+    }
+
+    .header-content h1 {
+        font-size: 1.75rem;
+    }
+
+    .header-content p {
+        font-size: 1rem;
+    }
+
+    .feature-icon {
+        width: 40px;
+        height: 40px;
+        font-size: 1.25rem;
+    }
+}
+</style>
+{% endblock %}
